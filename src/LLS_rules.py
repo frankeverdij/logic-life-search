@@ -1,6 +1,6 @@
 import re
 import ast
-from src.LLS_literal_manipulation import variable_from_literal, negate, standard_form_literal
+from src.LLS_literal_manipulation import variable_from_literal, standard_form_literal
 from src.LLS_messages import print_message
 
 

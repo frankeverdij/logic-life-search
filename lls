@@ -12,6 +12,7 @@ import src.LLS_rules
 import src.LLS_files
 import src.LLS_defaults
 import src.LLS_literal_manipulation
+import src.LLS_formatting
 from src.SearchPattern import SearchPattern
 from src.LLS_literal_manipulation import negate, variable_from_literal
 from src.LLS_messages import print_message
