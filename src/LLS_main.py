@@ -174,7 +174,7 @@ def preprocess_and_solve(search_pattern,
             indent = indent, verbosity = verbosity
         )
         if save_state:
-            if isinstance(save_state, basestring):
+            if isinstance(save_state, str):
                 state_file = save_state
             else:
                 state_file = "lls_state.pkl"

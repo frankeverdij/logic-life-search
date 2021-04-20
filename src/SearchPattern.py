@@ -76,7 +76,7 @@ class SearchPattern:
             for x in range(width + 2):
                 for y in range(height + 2):
                     for t in range(duration):
-                        if x in range(1, width + 1) and y in range(1, height + 1):
+                        if 1 <= x <= width and 1 <= y <= height:
                             new_ignore_transition[t][y][x] = self.ignore_transition[t][y - 1][x - 1]
                         else:
                             new_ignore_transition[t][y][x] = self.background_ignore_transition[t % background_duration][y % background_height][x % background_width]
@@ -708,12 +708,12 @@ class SearchPattern:
     def force_equal(self, argument_0, argument_1 = None):
 
         if argument_1 != None:
-            assert isinstance(argument_0, basestring) and isinstance(argument_1, basestring), "force_equal arguments not understood"
+            assert isinstance(argument_0, str) and isinstance(argument_1, str), "force_equal arguments not understood"
             cell_pair_list = [(argument_0, argument_1)]
         elif argument_0 == []:
             return
         elif isinstance(argument_0[0], str):
-                assert len(argument_0) == 2 and isinstance(argument_0[1], basestring), "force_equal arguments not understood"
+                assert len(argument_0) == 2 and isinstance(argument_0[1], str), "force_equal arguments not understood"
                 cell_pair_list = [argument_0]
         else:
             cell_pair_list = argument_0

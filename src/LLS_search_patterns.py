@@ -502,19 +502,19 @@ def stator_search_pattern(pattern, rule=None, background_grid=None, indent=0, ve
     print_message('Creating oscillator...', 3, indent = indent, verbosity = verbosity)
     while True:
         print_message('Generation: ' + str(duration), 3, indent = indent + 1, verbosity = verbosity)
-        grid.append([["0" for x in xrange(width)] for y in xrange(height)])
+        grid.append([["0" for x in range(width)] for y in range(height)])
         duration += 1
-        for x in xrange(width):
-            for y in xrange(height):
+        for x in range(width):
+            for y in range(height):
                 BS_letter = "S" if grid[-2][y][x] == "1" else "B"
                 grid[-1][y][x] = rule[BS_letter + LLS_rules.transition_from_cells(neighbours_from_coordinates(grid,x,y,-1, background_grid = background_grid))]
         if grid[0] == grid[-1]:
             break
     number_of_variables = 0
-    for x in xrange(width):
-        for y in xrange(height):
-            if all(grid[t][y][x] == grid[0][y][x] for t in xrange(duration)):
-                for t in xrange(duration):
+    for x in range(width):
+        for y in range(height):
+            if all(grid[t][y][x] == grid[0][y][x] for t in range(duration)):
+                for t in range(duration):
                     grid[t][y][x] = "stator_cell_" + str(number_of_variables)
                 number_of_variables += 1
     grid = [[["0" for x in range(width)]] + generation + [["0" for x in range(width)]] for generation in grid]
