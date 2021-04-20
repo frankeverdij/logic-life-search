@@ -1,7 +1,6 @@
 import re
 import ast
-import src.LLS_formatting as LLS_formatting
-from src.LLS_literal_manipulation import variable_from_literal, negate
+from src.LLS_literal_manipulation import variable_from_literal, negate, standard_form_literal
 from src.LLS_messages import print_message
 
 
@@ -87,7 +86,7 @@ def rule_from_rulestring(rulestring, indent = 0, verbosity = 0):
             for BS_letter in "BS":
                 for number_of_neighbours in "012345678":
                     for character in possible_transitions[number_of_neighbours]:
-                        literal = LLS_formatting.standard_form_literal(str(rule_unsanitized[BS_letter + number_of_neighbours + character]))
+                        literal = standard_form_literal(str(rule_unsanitized[BS_letter + number_of_neighbours + character]))
                         assert literal[-1] not in ['\xe2\x80\x99', "'"], "Can't ignore transition in rule"
                         rule[BS_letter + number_of_neighbours + character] = literal
             return rule

@@ -1,3 +1,5 @@
+import re
+
 def negate(literal, flag = True, DIMACS = False):
     """The negation of the given literal"""
 
@@ -67,3 +69,17 @@ def offset_background(grid, x_offset, y_offset, t_offset):
 
     for i in range(duration):
         grid[i] = offset_grid[i]
+
+def standard_form_literal(cell):
+    """Tidies up a cell into a standard form"""
+
+    cell = re.sub('\xe2\x80\x99', "'", cell) # Replace alternative "'" character
+    cell = re.sub("'+$", "'", cell)  # Remove duplicate "'"s
+    cell = re.sub("^(:?--)*", "", cell)  # Cancel double "-" signs
+    # Other simplifications
+    to_replace   = ["-*", "-*'", "-0", "-0'", "-1", "-1'"]
+    replacements = [ "*",  "*'",  "1",  "1'",  "0",  "0'"]
+    if cell in to_replace:
+        cell = replacements[to_replace.index(cell)]
+
+    return cell

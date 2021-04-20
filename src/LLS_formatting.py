@@ -2,7 +2,7 @@ import re
 import copy
 import src.LLS_rules as LLS_rules
 from src.LLS_messages import print_message
-from src.LLS_literal_manipulation import negate, variable_from_literal, implies
+from src.LLS_literal_manipulation import negate, variable_from_literal, implies, standard_form_literal
 
 def parse_input_string(input_string, indent = 0, verbosity = 0):
     """Transforms a "search pattern" given as a string into a SearchPattern"""
@@ -190,17 +190,3 @@ def make_csv(
 
     return csv_string
 
-
-def standard_form_literal(cell):
-    """Tidies up a cell into a standard form"""
-
-    cell = re.sub('\xe2\x80\x99', "'", cell) # Replace alternative "'" character
-    cell = re.sub("'+$", "'", cell)  # Remove duplicate "'"s
-    cell = re.sub("^(:?--)*", "", cell)  # Cancel double "-" signs
-    # Other simplifications
-    to_replace   = ["-*", "-*'", "-0", "-0'", "-1", "-1'"]
-    replacements = [ "*",  "*'",  "1",  "1'",  "0",  "0'"]
-    if cell in to_replace:
-        cell = replacements[to_replace.index(cell)]
-
-    return cell
