@@ -4,10 +4,10 @@ import src.LLS_rules as LLS_rules
 from src.LLS_messages import print_message
 from src.LLS_literal_manipulation import standard_form_literal
 
-def parse_input_string(input_string, indent = 0, verbosity = 0):
+def parse_input_string(input_string, indent = 0):
     """Transforms a "search pattern" given as a string into a SearchPattern"""
 
-    print_message("Parsing input pattern...", 3, indent = indent, verbosity = verbosity)
+    print_message("Parsing input pattern...", 3, indent = indent)
     # Remove any trailing (or leading) whitespace and commas
     input_string = input_string.strip(", \t\n\f\v")
 
@@ -49,14 +49,14 @@ def parse_input_string(input_string, indent = 0, verbosity = 0):
     #     for cell in row) for row in generation) for generation in grid), \
     #     "Malformed input and/or null string used as variable name"
 
-    print_message("Done\n", 3, indent = indent, verbosity = verbosity)
+    print_message("Done\n", 3, indent = indent)
 
     return grid, ignore_transition
 
-def make_rle(grid, background_grid = None, rule = None, determined = None, show_background = None, indent = 0, verbosity = 0):
+def make_rle(grid, background_grid = None, rule = None, determined = None, show_background = None, indent = 0):
     """Turn a search pattern into nicely formatted string form"""
 
-    print_message('Format: RLE', 3, indent = indent, verbosity = verbosity)
+    print_message('Format: RLE', 3, indent = indent)
 
     grid = copy.deepcopy(grid)
 
@@ -116,11 +116,11 @@ def make_csv(
     rule = None,
     determined = None,
     show_background = None,
-    indent = 0, verbosity = 0
+    indent = 0
 ):
     """Turn a search pattern in list form into nicely formatted csv string"""
 
-    print_message('Format: csv', 3, indent = indent, verbosity = verbosity)
+    print_message('Format: csv', 3, indent = indent)
 
     grid = copy.deepcopy(grid)
     if ignore_transition == None:

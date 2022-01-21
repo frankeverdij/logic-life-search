@@ -10,12 +10,12 @@ import src.LLS_defaults as LLS_defaults
 from src.LLS_messages import print_message
 
 
-def SAT_solve(search_pattern, solver=None, parameters=None, timeout=None, save_dimacs = None, dry_run = None, indent = 0, verbosity = 0):
+def SAT_solve(search_pattern, solver=None, parameters=None, timeout=None, save_dimacs = None, dry_run = None, indent = 0):
     """Solve the given DIMACS problem, using the specified SAT solver"""
 
-    print_message('Solving...', indent = indent, verbosity = verbosity)
+    print_message('Solving...', indent = indent)
     indent += 1
-    print_message('Preparing SAT solver input...', 3, indent = indent, verbosity = verbosity)
+    print_message('Preparing SAT solver input...', 3, indent = indent)
     solvers = [
         "minisat",
         "MapleCOMSPS",
@@ -48,39 +48,39 @@ def SAT_solve(search_pattern, solver=None, parameters=None, timeout=None, save_d
             dimacs_file = "lls_dimacs" + str(file_number) + ".cnf"
 
     # The solvers prefer their input as a file, so write it out
-    search_pattern.clauses.make_file(dimacs_file, indent = indent + 1, verbosity = verbosity)
+    search_pattern.clauses.make_file(dimacs_file, indent = indent + 1)
 
-    print_message('Done\n', 3, indent = indent, verbosity = verbosity)
+    print_message('Done\n', 3, indent = indent)
     if not dry_run:
-        solution, time_taken = use_solver(solver, dimacs_file, parameters = parameters, timeout = timeout, indent = indent, verbosity = verbosity)
+        solution, time_taken = use_solver(solver, dimacs_file, parameters = parameters, timeout = timeout, indent = indent)
     else:
         solution = "DRYRUN\n"
         time_taken = None
 
     if save_dimacs == None:
-        print_message('Removing DIMACS file...', 3, indent = indent, verbosity = verbosity)
+        print_message('Removing DIMACS file...', 3, indent = indent)
         try:
             os.remove(dimacs_file)
         except OSError as e:
             if e.errno == errno.ENOENT:
-                print_message('DIMACS file "' + dimacs_file + '" not found', 3, indent = indent + 1, verbosity = verbosity)
+                print_message('DIMACS file "' + dimacs_file + '" not found', 3, indent = indent + 1)
             else:
                 raise
-        print_message('Done\n', 3, indent = indent, verbosity = verbosity)
+        print_message('Done\n', 3, indent = indent)
     indent -= 1
     if solution not in ["UNSAT\n", "TIMEOUT\n", "DRYRUN\n"]:
         sat = "SAT"
         solution = search_pattern.substitute_solution(
             solution,
-            indent = indent + 1, verbosity = verbosity
+            indent = indent + 1
         )
     else:
         sat = solution[:-1]
         solution = None
-    print_message('Done\n', indent = indent, verbosity = verbosity)
+    print_message('Done\n', indent = indent)
     return solution, sat, time_taken
 
-def use_solver(solver, file_name, parameters = None, timeout = None, indent = 0, verbosity = 0):
+def use_solver(solver, file_name, parameters = None, timeout = None, indent = 0):
 
     if parameters != None:
         parameter_list = parameters.strip(" ").split(" ")
@@ -110,7 +110,7 @@ def use_solver(solver, file_name, parameters = None, timeout = None, indent = 0,
 
     timeout_timer = threading.Timer(timeout, timeout_function, [solver_process, timeout_flag])
 
-    print_message('Solving with "' + solver + '" ... (Start time: ' + time.ctime() + ")", 3, indent = indent, verbosity = verbosity)
+    print_message('Solving with "' + solver + '" ... (Start time: ' + time.ctime() + ")", 3, indent = indent)
 
     try:
         start_time = time.time()
@@ -126,15 +126,15 @@ def use_solver(solver, file_name, parameters = None, timeout = None, indent = 0,
         time_taken = time.time() - start_time
 
     if not timeout_flag[0]:
-        print_message('Done\n', 3,  indent = indent, verbosity = verbosity)
+        print_message('Done\n', 3,  indent = indent)
 
-        print_message('Formatting SAT solver output...', 3, indent = indent, verbosity = verbosity)
+        print_message('Formatting SAT solver output...', 3, indent = indent)
 
         if solver in ["minisat","MapleCOMSPS","MapleCOMSPS_LRB","riss"]:
-            solution = LLS_files.string_from_file("temp_SAT_solver_output", indent = indent + 1, verbosity = verbosity)
-            print_message('Removing SAT solver output file...', 3, indent = indent+1, verbosity = verbosity)
+            solution = LLS_files.string_from_file("temp_SAT_solver_output", indent = indent + 1)
+            print_message('Removing SAT solver output file...', 3, indent = indent+1)
             os.remove("temp_SAT_solver_output")
-            print_message('Done\n', 3, indent = indent + 1, verbosity = verbosity)
+            print_message('Done\n', 3, indent = indent + 1)
         elif solver in ["lingeling","plingeling","treengeling","cadical","kissat"]:
             solution = str(out)
             solution = solution.split("\ns ")
@@ -160,14 +160,14 @@ def use_solver(solver, file_name, parameters = None, timeout = None, indent = 0,
         if "UNSAT" in solution.upper():
             solution = "UNSAT\n"
 
-        print_message("SAT solver output:", 3, indent = indent + 1, verbosity = verbosity)
-        print_message(out, 3, indent = indent + 2, verbosity = verbosity)
-        print_message('Error (if any): "' + error + '"', 3, indent = indent + 1, verbosity = verbosity)
-        print_message('Time taken: ' + str(time_taken), 3, indent = indent + 1, verbosity = verbosity)
-        print_message('Done\n', 3, indent = indent, verbosity = verbosity)
+        print_message("SAT solver output:", 3, indent = indent + 1)
+        print_message(out, 3, indent = indent + 2)
+        print_message('Error (if any): "' + error + '"', 3, indent = indent + 1)
+        print_message('Time taken: ' + str(time_taken), 3, indent = indent + 1)
+        print_message('Done\n', 3, indent = indent)
 
     else:
-        print_message('Timed out\n', 3, indent = indent, verbosity = verbosity)
+        print_message('Timed out\n', 3, indent = indent)
         solution = "TIMEOUT\n"
 
     return solution, time_taken

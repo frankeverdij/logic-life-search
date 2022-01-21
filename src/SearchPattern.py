@@ -23,7 +23,7 @@ class SearchPattern:
         background_ignore_transition = None,
         rule = None,
         add_border = True,
-        indent = 0, verbosity = 0
+        indent = 0
     ):
         self.grid = copy.deepcopy(grid)
         self.ignore_transition = (
@@ -102,8 +102,8 @@ class SearchPattern:
         return not __eq__(self, other)
 
 
-    def standardise_varaibles_names(self, indent = 0, verbosity = 0):
-        print_message("Standardising variable names...", 3, indent = indent, verbosity = verbosity)
+    def standardise_varaibles_names(self, indent = 0):
+        print_message("Standardising variable names...", 3, indent = indent)
 
         #Give variables standard names and replace stars with new variable names
         standard_variables_from_input_variables = {}
@@ -142,13 +142,13 @@ class SearchPattern:
                     current_variable_number += 1
                 self.rule[transition] = negate(standard_variables_from_input_variables[variable],negated)
 
-        print_message("Done\n", 3, indent = indent, verbosity = verbosity)
+        print_message("Done\n", 3, indent = indent)
 
     def number_of_cells(self):
         return len(set(variable_from_literal(cell) for generation in self.grid for row in generation for cell in row if cell not in ["0", "1"]))
 
-    def remove_redundancies(self, indent = 0, verbosity = 0):
-        print_message("Removing redundant transitions...", 3, indent = indent, verbosity = verbosity)
+    def remove_redundancies(self, indent = 0):
+        print_message("Removing redundant transitions...", 3, indent = indent)
         parents_dict = {}
         to_force_equal = []
         background_duration = len(self.background_grid)
@@ -203,7 +203,7 @@ class SearchPattern:
                             else:
                                 parents_dict[parents_string] = cell
         self.force_equal(to_force_equal)
-        print_message("Done\n", 3, indent = indent, verbosity = verbosity)
+        print_message("Done\n", 3, indent = indent)
 
     def force_transition(self, grid, x, y, t, method):
         cell = grid[t][y][x]
@@ -271,7 +271,7 @@ class SearchPattern:
                     self.clauses.append(implies([transition_literal] + [negate(predecessor_cell, not predecessor_cell_alive)] + list(map(negate, neighbours, map(lambda P: not P, neighbours_alive))), cell))
                     self.clauses.append(implies([negate(transition_literal)] + [negate(predecessor_cell, not predecessor_cell_alive)] + list(map(negate, neighbours, map(lambda P: not P, neighbours_alive))), negate(cell)))
 
-    def force_evolution(self, method=None, indent = 0, verbosity = 0):
+    def force_evolution(self, method=None, indent = 0):
         """Adds clauses that force the search pattern to obey the transition rule"""
 
         # Methods:
@@ -279,7 +279,7 @@ class SearchPattern:
         # 1. An implementation of the naive scheme Knuth gives in the solution to exercise 65a                      (190 clauses and 0 auxillary variables per cell)
         # 2. A very naive scheme just listing all possible predecessor neighbourhoods                               (512 clauses and 0 auxillary variables per cell)
 
-        print_message("Enforcing evolution rule...", 3, indent = indent, verbosity = verbosity)
+        print_message("Enforcing evolution rule...", 3, indent = indent)
 
         if method is None:
             if LLS_rules.rulestring_from_rule(self.rule) == "B3/S23":
@@ -289,7 +289,7 @@ class SearchPattern:
         assert method in range(3), "Method not found"
         assert method == 2 or LLS_rules.rulestring_from_rule(self.rule) == "B3/S23", "Rules other than Life can only use method 2"
 
-        print_message("Method: " + str(method), 3, indent = indent + 1, verbosity = verbosity)
+        print_message("Method: " + str(method), 3, indent = indent + 1)
         starting_number_of_clauses = len(self.clauses.clause_set)
         # Iterate over all cells not in the first generation
         for t, generation in enumerate(self.grid):
@@ -309,16 +309,16 @@ class SearchPattern:
         print_message(
             "Number of clauses used: " + str(len(self.clauses.clause_set) - starting_number_of_clauses),
             3,
-            indent = indent + 1, verbosity = verbosity
+            indent = indent + 1
         )
-        print_message("Done\n", 3, indent = indent, verbosity = verbosity)
+        print_message("Done\n", 3, indent = indent)
 
 
-    def force_change(self, times, indent = 0, verbosity = 0):
+    def force_change(self, times, indent = 0):
         """Adds clauses forcing at least one cell to change between specified generations"""
 
         (t_0, t_1) = times
-        print_message("Forcing at least one cell to change between generations " + str(t_0) + " and " + str(t_1) + " ...", 3, indent = indent, verbosity = verbosity)
+        print_message("Forcing at least one cell to change between generations " + str(t_0) + " and " + str(t_1) + " ...", 3, indent = indent)
 
         starting_number_of_clauses = len(self.clauses.clause_set)
 
@@ -330,15 +330,15 @@ class SearchPattern:
         print_message(
             "Number of clauses used: " + str(len(self.clauses.clause_set) - starting_number_of_clauses),
             3,
-            indent = indent + 1, verbosity = verbosity
+            indent = indent + 1
         )
-        print_message("Done\n", 3, indent = indent, verbosity = verbosity)
+        print_message("Done\n", 3, indent = indent)
 
 
-    def force_distinct(self, solution, determined = False, indent = 0, verbosity = 0):
+    def force_distinct(self, solution, determined = False, indent = 0):
         """Force search_pattern to have at least one differnence from given solution"""
 
-        print_message("Forcing pattern to be different from solution...", 3, indent = indent, verbosity = verbosity)
+        print_message("Forcing pattern to be different from solution...", 3, indent = indent)
 
         clause = []
 
@@ -371,8 +371,8 @@ class SearchPattern:
             else:
                 clause.append(negate(literal))
         self.clauses.append(clause)
-        print_message("Number of clauses used: 1", 3, indent = indent + 1, verbosity = verbosity)
-        print_message("Done\n", 3, indent = indent, verbosity = verbosity)
+        print_message("Number of clauses used: 1", 3, indent = indent + 1)
+        print_message("Done\n", 3, indent = indent)
 
     def define_cardinality_variable(self, literals, at_least, already_defined = None, preprocessing = True):
         """Generates clauses defining a cardinality variable"""
@@ -480,15 +480,15 @@ class SearchPattern:
                 self.define_cardinality_variable(literals_2, at_least_2, already_defined, preprocessing = False)
         return name
 
-    def force_symmetry(self, symmetry, indent = 0, verbosity = 0):
-        to_force_equal = self.cell_pairs_from_transformation(symmetry, indent = indent, verbosity = verbosity)
+    def force_symmetry(self, symmetry, indent = 0):
+        to_force_equal = self.cell_pairs_from_transformation(symmetry, indent = indent)
         self.force_equal(to_force_equal)
 
-    def force_asymmetry(self, asymmetry, indent = 0, verbosity = 0):
-        to_force_unequal = self.cell_pairs_from_transformation(asymmetry, indent = indent, verbosity = verbosity)
+    def force_asymmetry(self, asymmetry, indent = 0):
+        to_force_unequal = self.cell_pairs_from_transformation(asymmetry, indent = indent)
         self.force_unequal(to_force_unequal)
 
-    def cell_pairs_from_transformation(self, symmetry, indent = 0, verbosity = 0):
+    def cell_pairs_from_transformation(self, symmetry, indent = 0):
         (
             transformation,
             x_translate,
@@ -550,7 +550,7 @@ class SearchPattern:
                         cell_pairs.append((cell, other_cell))
         return cell_pairs
 
-    def force_at_least(self, literals, amount, indent = 0, verbosity = 0):
+    def force_at_least(self, literals, amount, indent = 0):
         """Adds clauses forcing at least the given amount of literals to be true"""
 
         starting_number_of_clauses = len(self.clauses.clause_set)
@@ -559,72 +559,72 @@ class SearchPattern:
         print_message(
             "Number of clauses used: " + str(len(self.clauses.clause_set) - starting_number_of_clauses),
             3,
-            indent = indent, verbosity = verbosity
+            indent = indent
         )
 
 
-    def force_at_most(self, literals, amount, indent = 0, verbosity = 0):
+    def force_at_most(self, literals, amount, indent = 0):
         """Adds clauses forcing at most the given amount of literals to be true"""
 
-        self.force_at_least(map(negate, literals), len(literals) - amount, indent = indent, verbosity = verbosity)
+        self.force_at_least(map(negate, literals), len(literals) - amount, indent = indent)
 
 
-    def force_exactly(self, literals, amount, indent=0, verbosity=0):
+    def force_exactly(self, literals, amount, indent=0):
         """Adds clauses forcing exactly the given amount of literals to be true"""
 
-        self.force_at_least(literals, amount, indent = indent, verbosity = verbosity)
-        self.force_at_most(literals, amount, indent = indent, verbosity = verbosity)
+        self.force_at_least(literals, amount, indent = indent)
+        self.force_at_most(literals, amount, indent = indent)
 
-    def force_population_at_least(self, constraint, indent=0, verbosity=0):
+    def force_population_at_least(self, constraint, indent=0):
         (times, population) = constraint
         print_message(
             "Forcing the population in generation" + ("s" if len(times) > 1 else "") + " " + ", ".join(str(t) for t in times) + " to be at least " + str(population),
             3,
-            indent = indent, verbosity = verbosity
+            indent = indent
         )
         literals = [cell for t in times for row in self.grid[t] for cell in row]
-        self.force_at_least(literals, population, indent = indent + 1, verbosity = verbosity)
+        self.force_at_least(literals, population, indent = indent + 1)
         print_message(
             "Done\n",
             3,
-            indent = indent, verbosity = verbosity
+            indent = indent
         )
 
-    def force_population_at_most(self, constraint, indent = 0, verbosity = 0):
+    def force_population_at_most(self, constraint, indent = 0):
         (times, population) = constraint
         print_message(
             "Forcing the population in generation" + ("s" if len(times) > 1 else "") + " " + ", ".join(str(t) for t in times) + " to be at most " + str(population),
             3,
-            indent = indent, verbosity = verbosity
+            indent = indent
         )
         literals = [cell for t in times for row in self.grid[t] for cell in row]
-        self.force_at_most(literals, population, indent = indent + 1, verbosity = verbosity)
+        self.force_at_most(literals, population, indent = indent + 1)
         print_message(
             "Done\n",
             3,
-            indent = indent, verbosity = verbosity
+            indent = indent
         )
 
-    def force_population_exactly(self, constraint, indent = 0, verbosity = 0):
+    def force_population_exactly(self, constraint, indent = 0):
         (times, population) = constraint
         print_message(
             "Forcing the population in generation" + ("s" if len(times) > 1 else "") + " " + ", ".join(str(t) for t in times) + " to be exactly " + str(population),
             3,
-            indent = indent, verbosity = verbosity
+            indent = indent
         )
         literals = [cell for t in times for row in self.grid[t] for cell in row]
-        self.force_exactly(literals, population, indent = indent + 1, verbosity = verbosity)
+        self.force_exactly(literals, population, indent = indent + 1)
         print_message(
             "Done\n",
             3,
-            indent = indent, verbosity = verbosity
+            indent = indent
         )
 
-    def force_max_change(self, max_change, indent = 0, verbosity = 0):
+    def force_max_change(self, max_change, indent = 0):
         print_message(
             "Forcing the pattern to never change by more than " + str(max_change) + " cells",
             3,
-            indent = indent, verbosity = verbosity
+            indent = indent
         )
         width = len(self.grid[0][0])
         height = len(self.grid[0])
@@ -640,20 +640,20 @@ class SearchPattern:
             print_message(
                 "Generation " + str(t),
                 3,
-                indent = indent+1, verbosity = verbosity
+                indent = indent+1
             )
-            self.force_at_most(literals, max_change, indent = indent + 2, verbosity = verbosity)
+            self.force_at_most(literals, max_change, indent = indent + 2)
         print_message(
             "Done\n",
             3,
-            indent = indent, verbosity = verbosity
+            indent = indent
         )
 
-    def force_max_decay(self, max_decay, indent = 0, verbosity = 0):
+    def force_max_decay(self, max_decay, indent = 0):
         print_message(
             "Forcing the pattern to never decay by more than " + str(max_decay) + " cells",
             3,
-            indent = indent, verbosity = verbosity
+            indent = indent
         )
         width = len(self.grid[0][0])
         height = len(self.grid[0])
@@ -668,20 +668,20 @@ class SearchPattern:
             print_message(
                 "Generation " + str(t),
                 3,
-                indent = indent+1, verbosity = verbosity
+                indent = indent+1
             )
-            self.force_at_most(literals, max_decay, indent = indent + 2, verbosity = verbosity)
+            self.force_at_most(literals, max_decay, indent = indent + 2)
         print_message(
             "Done\n",
             3,
-            indent = indent, verbosity = verbosity
+            indent = indent
         )
 
-    def force_max_growth(self, max_growth, indent = 0, verbosity = 0):
+    def force_max_growth(self, max_growth, indent = 0):
         print_message(
             "Forcing the pattern to never grow by more than " + str(max_growth) + " cells",
             3,
-            indent = indent, verbosity = verbosity
+            indent = indent
         )
         width = len(self.grid[0][0])
         height = len(self.grid[0])
@@ -696,13 +696,13 @@ class SearchPattern:
             print_message(
                 "Generation " + str(t),
                 3,
-                indent = indent+1, verbosity = verbosity
+                indent = indent+1
             )
-            self.force_at_most(literals, max_growth, indent = indent + 2, verbosity = verbosity)
+            self.force_at_most(literals, max_growth, indent = indent + 2)
         print_message(
             "Done\n",
             3,
-            indent = indent, verbosity = verbosity
+            indent = indent
         )
 
     def force_equal(self, argument_0, argument_1 = None):
@@ -808,11 +808,11 @@ class SearchPattern:
         self.clauses.append(clause)
 
 
-    def make_string(self, pattern_output_format = None, determined = None, show_background = None, indent = 0, verbosity = 0):
+    def make_string(self, pattern_output_format = None, determined = None, show_background = None, indent = 0):
         if pattern_output_format == None:
             pattern_output_format = LLS_defaults.pattern_output_format
 
-        print_message('Formatting output...', 3, indent = indent, verbosity = verbosity)
+        print_message('Formatting output...', 3, indent = indent)
 
         assert pattern_output_format in ["rle","csv"], "Format not recognised"
 
@@ -828,7 +828,7 @@ class SearchPattern:
                 rule = self.rule,
                 determined = determined,
                 show_background = show_background,
-                indent = indent + 1, verbosity = verbosity
+                indent = indent + 1
             )
         elif pattern_output_format == "csv":
             output_string = LLS_formatting.make_csv(
@@ -839,23 +839,23 @@ class SearchPattern:
                 rule = self.rule,
                 determined = determined,
                 show_background = show_background,
-                indent = indent + 1, verbosity = verbosity
+                indent = indent + 1
             )
 
-        print_message('Done\n', 3, indent = indent, verbosity = verbosity)
+        print_message('Done\n', 3, indent = indent)
 
         return output_string
 
 
 
 
-    def substitute_solution(self, solution, indent = 0, verbosity = 0):
+    def substitute_solution(self, solution, indent = 0):
         """Return a copy of the search_pattern with the solution substituted back into it"""
         grid = copy.deepcopy(self.grid)
         rule = copy.deepcopy(self.rule)
         background_grid = copy.deepcopy(self.background_grid)
 
-        print_message('Substituting solution back into search grid...', 3, indent = indent, verbosity = verbosity)
+        print_message('Substituting solution back into search grid...', 3, indent = indent)
 
         # Remove the first line that just says "SAT", and split into a list of literals
         solution = set(solution.split("\n")[1].split())
@@ -917,14 +917,14 @@ class SearchPattern:
         width = len(grid[0][0])
         height = len(grid[0])
         duration = len(grid)
-        print_message('Done\n', 3, indent = indent, verbosity = verbosity)
+        print_message('Done\n', 3, indent = indent)
 
         return SearchPattern(grid, background_grid = background_grid, rule = rule, add_border = False)
 
 
 
-    def deterministic(self, indent = 0, verbosity = 0):
-        print_message("Checking if pattern is deterministic...", 3, indent = indent, verbosity = verbosity)
+    def deterministic(self, indent = 0):
+        print_message("Checking if pattern is deterministic...", 3, indent = indent)
         determined = [[[False for cell in row] for row in generation] for generation in self.grid]
         determined_variables = set()
         width = len(self.grid[0][0])
@@ -951,7 +951,7 @@ class SearchPattern:
             if determined == determined_copy:
                 break
 
-        print_message("Done\n", 3, indent = indent, verbosity = verbosity)
+        print_message("Done\n", 3, indent = indent)
         if all(flag for generation in determined for row in generation for flag in row):
             return True
         else:
