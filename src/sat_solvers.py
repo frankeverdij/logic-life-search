@@ -5,12 +5,12 @@ import os
 import errno
 import sys
 import re
-import src.files as LLS_files
-import src.defaults as LLS_defaults
+import src.files
+import src.defaults
 from src.messages import print_message
 
 
-def SAT_solve(search_pattern, solver=None, parameters=None, timeout=None, save_dimacs = None, dry_run = None, indent = 0):
+def sat_solve(search_pattern, solver=None, parameters=None, timeout=None, save_dimacs=None, dry_run=None, indent=0):
     """Solve the given DIMACS problem, using the specified SAT solver"""
 
     print_message('Solving...', indent=indent)
@@ -30,9 +30,9 @@ def SAT_solve(search_pattern, solver=None, parameters=None, timeout=None, save_d
         "kissat"]
     try:
         if solver is None:
-            solver = LLS_defaults.solver
+            solver = src.defaults.solver
         elif int(solver) in range(len(solvers)):
-            solver = solvers[solver] # Allow solver to be specified by number
+            solver = solvers[solver]  # Allow solver to be specified by number
     except ValueError:
         pass
 
@@ -48,16 +48,16 @@ def SAT_solve(search_pattern, solver=None, parameters=None, timeout=None, save_d
             dimacs_file = "lls_dimacs" + str(file_number) + ".cnf"
 
     # The solvers prefer their input as a file, so write it out
-    search_pattern.clauses.make_file(dimacs_file, indent = indent + 1)
+    search_pattern.clauses.make_file(dimacs_file, indent=indent + 1)
 
     print_message('Done\n', 3, indent=indent)
     if not dry_run:
-        solution, time_taken = use_solver(solver, dimacs_file, parameters = parameters, timeout = timeout, indent = indent)
+        solution, time_taken = use_solver(solver, dimacs_file, parameters=parameters, timeout=timeout, indent=indent)
     else:
         solution = "DRYRUN\n"
         time_taken = None
 
-    if save_dimacs == None:
+    if save_dimacs is None:
         print_message('Removing DIMACS file...', 3, indent=indent)
         try:
             os.remove(dimacs_file)
@@ -72,7 +72,7 @@ def SAT_solve(search_pattern, solver=None, parameters=None, timeout=None, save_d
         sat = "SAT"
         solution = search_pattern.substitute_solution(
             solution,
-            indent = indent + 1
+            indent=indent + 1
         )
     else:
         sat = solution[:-1]
@@ -80,18 +80,18 @@ def SAT_solve(search_pattern, solver=None, parameters=None, timeout=None, save_d
     print_message('Done\n', indent=indent)
     return solution, sat, time_taken
 
-def use_solver(solver, file_name, parameters = None, timeout = None, indent = 0):
 
-    if parameters != None:
+def use_solver(solver, file_name, parameters=None, timeout=None, indent=0):
+    if parameters is not None:
         parameter_list = parameters.strip(" ").split(" ")
     else:
         parameter_list = []
 
     solver_path = sys.path[0] + "/solvers/" + solver
 
-    if solver in ["minisat","MapleCOMSPS","MapleCOMSPS_LRB","riss"]:
+    if solver in ["minisat", "MapleCOMSPS", "MapleCOMSPS_LRB", "riss"]:
         command = [solver_path, file_name, "temp_SAT_solver_output"] + parameter_list
-    elif solver in ["lingeling","plingeling","treengeling","cadical","kissat"]:
+    elif solver in ["lingeling", "plingeling", "treengeling", "cadical", "kissat"]:
         command = [solver_path, file_name] + parameter_list
     elif solver in ["glucose", "glucose-syrup"]:
         command = [solver_path, file_name, "-model"] + parameter_list
@@ -102,26 +102,26 @@ def use_solver(solver, file_name, parameters = None, timeout = None, indent = 0)
         command,
         stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
 
-    timeout_flag = [False] #We want the flag to be mutable, so we put it into a little box.
+    timeout_flag = [False]  # We want the flag to be mutable, so we put it into a little box.
 
-    def timeout_function(solver_process, timeout_flag):
-        solver_process.kill()
-        timeout_flag[0] = "TIMEOUT"
+    def timeout_function(process, flag):
+        process.kill()
+        flag[0] = "TIMEOUT"
 
     timeout_timer = threading.Timer(timeout, timeout_function, [solver_process, timeout_flag])
 
     print_message('Solving with "' + solver + '" ... (Start time: ' + time.ctime() + ")", 3, indent=indent)
 
+    start_time = time.time()
     try:
-        start_time = time.time()
         timeout_timer.start()
         out, error = solver_process.communicate()
-        out = out.decode("utf-8")
-        error = error.decode("utf-8")
     except KeyboardInterrupt:
         solver_process.kill()
         timeout_flag[0] = "SIGINT"
     finally:
+        out = out.decode("utf-8")
+        error = error.decode("utf-8")
         timeout_timer.cancel()
         time_taken = time.time() - start_time
 
@@ -130,12 +130,12 @@ def use_solver(solver, file_name, parameters = None, timeout = None, indent = 0)
 
         print_message('Formatting SAT solver output...', 3, indent=indent)
 
-        if solver in ["minisat","MapleCOMSPS","MapleCOMSPS_LRB","riss"]:
-            solution = LLS_files.string_from_file("temp_SAT_solver_output", indent = indent + 1)
+        if solver in ["minisat", "MapleCOMSPS", "MapleCOMSPS_LRB", "riss"]:
+            solution = src.files.string_from_file("temp_SAT_solver_output", indent=indent + 1)
             print_message('Removing SAT solver output file...', 3, indent=indent + 1)
             os.remove("temp_SAT_solver_output")
             print_message('Done\n', 3, indent=indent + 1)
-        elif solver in ["lingeling","plingeling","treengeling","cadical","kissat"]:
+        elif solver in ["lingeling", "plingeling", "treengeling", "cadical", "kissat"]:
             solution = str(out)
             solution = solution.split("\ns ")
             solution = solution[1]

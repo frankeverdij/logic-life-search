@@ -285,7 +285,7 @@ def preprocess_and_solve(search_pattern,
             solution,
             sat,
             time_taken
-        ) = src.sat_solvers.SAT_solve(
+        ) = src.sat_solvers.sat_solve(
             search_pattern,
             solver=solver,
             parameters=parameters,
