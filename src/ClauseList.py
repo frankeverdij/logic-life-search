@@ -38,7 +38,7 @@ class ClauseList:
                     self.number_of_variables += 1
                 elif negate(literal) in clause:
                     return
-                dimacs_clause.append(negate(self.DIMACS_literal_from_variable[variable], negated, DIMACS=True))
+                dimacs_clause.append(negate(self.DIMACS_literal_from_variable[variable], negated, dimacs=True))
         dimacs_clause.sort()
         dimacs_clause.append("0\n")
         self.clause_set.add(" ".join(dimacs_clause))
