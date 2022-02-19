@@ -1,28 +1,29 @@
 from src.messages import print_message
 from src.literal_manipulation import negate, variable_from_literal
 
-class ClauseList:
 
+class ClauseList:
 
     def __init__(self):
         self.clause_set = set()
         self.number_of_variables = 0
         self.DIMACS_literal_from_variable = {}
 
-
     def __eq__(self, other):
-        if other == None:
+        if other is None:
             return False
         else:
-            return (self.clause_set == other.clause_set and self.number_of_variables == other.number_of_variables and self.DIMACS_literal_from_variable == other.DIMACS_literal_from_variable)
-
+            return (
+                    self.clause_set == other.clause_set
+                    and self.number_of_variables == other.number_of_variables
+                    and self.DIMACS_literal_from_variable == other.DIMACS_literal_from_variable
+            )
 
     def __ne__(self, other):
         return not __eq__(self, other)
 
-
     def append(self, clause):
-        DIMACS_clause = []
+        dimacs_clause = []
         clause = set(clause)
         if "1" in clause:
             return
@@ -36,16 +37,15 @@ class ClauseList:
                     self.DIMACS_literal_from_variable[variable] = str(self.number_of_variables + 1)
                     self.number_of_variables += 1
                 elif negate(literal) in clause:
-                     return
-                DIMACS_clause.append(negate(self.DIMACS_literal_from_variable[variable], negated, DIMACS = True))
-        DIMACS_clause.sort()
-        DIMACS_clause.append("0\n")
-        self.clause_set.add(" ".join(DIMACS_clause))
-
+                    return
+                dimacs_clause.append(negate(self.DIMACS_literal_from_variable[variable], negated, DIMACS=True))
+        dimacs_clause.sort()
+        dimacs_clause.append("0\n")
+        self.clause_set.add(" ".join(dimacs_clause))
 
     def make_file(self, file_name, indent=0):
-            print_message('Writing file "' + file_name + '" ...', 3, indent = indent)
-            with open(file_name, "w") as output_file:
-                output_file.write("p cnf " + str(self.number_of_variables) + " " + str(len(self.clause_set)) + "\n")
-                output_file.write("".join(self.clause_set))
-            print_message('Done\n', 3, indent = indent)
+        print_message('Writing file "' + file_name + '" ...', 3, indent=indent)
+        with open(file_name, "w") as output_file:
+            output_file.write("p cnf " + str(self.number_of_variables) + " " + str(len(self.clause_set)) + "\n")
+            output_file.write("".join(self.clause_set))
+        print_message('Done\n', 3, indent=indent)
