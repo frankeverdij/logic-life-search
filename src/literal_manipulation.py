@@ -75,11 +75,18 @@ def standard_form_literal(cell):
 
     cell = re.sub('\xe2\x80\x99', "'", cell) # Replace alternative "'" character
     cell = re.sub("'+$", "'", cell)  # Remove duplicate "'"s
-    cell = re.sub("^(:?--)*", "", cell)  # Cancel double "-" signs
+    cell = re.sub("^(--)*", "", cell)  # Cancel double "-" signs
     # Other simplifications
     to_replace   = ["-*", "-*'", "-0", "-0'", "-1", "-1'"]
-    replacements = [ "*",  "*'",  "1",  "1'",  "0",  "0'"]
-    if cell in to_replace:
-        cell = replacements[to_replace.index(cell)]
+    replacements = {
+        "-*":"*",
+        "-*'":"*'",
+        "-0":"1",
+        "-0'":"1'",
+        "-1":"0",
+        "-1'":"0'"
+    }
+    if cell in replacements:
+        cell = replacements[cell]
 
     return cell

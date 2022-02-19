@@ -5,22 +5,34 @@ from src.messages import print_message
 from src.literal_manipulation import standard_form_literal
 
 def parse_input_string(input_string, indent = 0):
-    """Transforms a "search pattern" given as a string into a SearchPattern"""
+    """Parses a search pattern given as a string"""
 
     print_message("Parsing input pattern...", 3, indent = indent)
-    # Remove any trailing (or leading) whitespace and commas
-    input_string = input_string.strip(", \t\n\f\v")
 
-    # Remove pesky carriage returns
-    input_string = re.sub("\r","",input_string)
+    # Convert any newline format (\r, \n, \n\r, \r\n) to just \n
+    if '\r' in input_string and '\n' not in input_string:
+        input_string = re.sub('\r','\n',input_string)
+    else:
+        input_string = re.sub('\r','',input_string)
 
+    # Remove any comments
+    input_string = re.sub('#.*','',input_string)
+
+    # Remove any trailing or leading whitespace and commas
+    input_string = input_string.strip(" ,\t\n")
     # Break down string into list-of-lists-of-lists
-    split_by_generation = re.split("[ ,\t]*(?:\n)(?:[ ,\t]*(?:\n))+[ ,\t]*", # Split on at least two newlines and any commas or spaces
-                                   input_string)
-    split_by_line = [re.split("[ ,\t]*(?:\n)[ ,\t]*", # Split on signle newline and any ammount of commas or spaces
-                     generation)
-                     for generation in split_by_generation]
-    grid = [[re.split("[ ,\t]+",  # Split on any amount of commas or spaces
+    split_by_generation = re.split(
+        r"[ ,\t]*\n(?:[ ,\t]*\n)+[ ,\t]*", # Split on at least two newlines and any spaces, commas or tabs
+        input_string
+    )
+    split_by_line = [
+        re.split(
+            r"[ ,\t]*\n[ ,\t]*", # Split on single newline and any amount of commas or spaces
+            generation
+        )
+    for generation in split_by_generation]
+
+    grid = [[re.split(r"[ ,\t]+",  # Split on any amount of commas or spaces
                     line)
                     for line in generation]
                     for generation in split_by_line]
@@ -33,6 +45,7 @@ def parse_input_string(input_string, indent = 0):
                len(line) == len(grid[0][0])
                for line in generation) for generation in grid)), \
            "Search pattern is not cuboidal"
+
     # Tidy up any weird inputs
     grid = [[[standard_form_literal(cell)
                       for cell in row] for row in generation] for generation in grid]
@@ -42,12 +55,6 @@ def parse_input_string(input_string, indent = 0):
                       for cell in row] for row in generation] for generation in grid]
     grid = [[[cell.rstrip("'") # The "'"s are now unnecessary
                       for cell in line] for line in generation] for generation in grid]
-
-    # #Check that "" isn't being used as a variable name
-    # assert all(all(all(
-    #     cell not in ["","-"]
-    #     for cell in row) for row in generation) for generation in grid), \
-    #     "Malformed input and/or null string used as variable name"
 
     print_message("Done\n", 3, indent = indent)
 
