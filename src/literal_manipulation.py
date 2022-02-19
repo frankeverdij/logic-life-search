@@ -1,12 +1,13 @@
 import re
 
-def negate(literal, flag = True, DIMACS = False):
+
+def negate(literal, flag=True, dimacs=False):
     """The negation of the given literal"""
 
     if flag:
         if literal == "0":
             negation = "1"
-        elif literal == "1" and not DIMACS:
+        elif literal == "1" and not dimacs:
             negation = "0"
         elif literal[0] == "-":
             negation = literal[1:]
@@ -28,7 +29,8 @@ def variable_from_literal(literal):
         variable = literal
         negated = False
 
-    return (variable, negated)
+    return variable, negated
+
 
 def implies(antecedents, consequent):
     """Creates a clause saying that the antecedent literals imply the consequent"""
@@ -36,20 +38,23 @@ def implies(antecedents, consequent):
         antecedents = [antecedents]
     return [negate(antecedent) for antecedent in antecedents] + [consequent]
 
-def neighbours_from_coordinates(grid,x,y,t,t_offset=-1,background_grid=[[["0"]]]):
 
+def neighbours_from_coordinates(grid, x, y, t, t_offset=-1, background_grid=None):
     width = len(grid[0][0])
     height = len(grid[0])
 
     neighbours = []
-    for x_offset, y_offset in [(1,0),(1,1),(0,1),(-1,1),(-1,0),(-1,-1),(0,-1),(1,-1)]:
-        if (x + x_offset in range(width) and y + y_offset in range(height)):
+    for x_offset, y_offset in [(1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1)]:
+        if x + x_offset in range(width) and y + y_offset in range(height):
             neighbours.append(grid[t + t_offset][y + y_offset][x + x_offset])
         else:
+            if background_grid is None:
+                background_grid = [[["0"]]]
             background_width = len(background_grid[0][0])
             background_height = len(background_grid[0])
             background_duration = len(background_grid)
-            neighbours.append(background_grid[(t + t_offset)%background_duration][(y + y_offset)%background_height][(x + x_offset)%background_width])
+            neighbours.append(background_grid[(t + t_offset) % background_duration][(y + y_offset) % background_height][
+                                  (x + x_offset) % background_width])
 
     return neighbours
 
@@ -63,28 +68,28 @@ def offset_background(grid, x_offset, y_offset, t_offset):
         [
             [
                 grid[(t + t_offset) % duration][(y + y_offset) % height][(x + x_offset) % width]
-            for x in range(width)]
-        for y in range(height)]
-    for t in range(duration)]
+                for x in range(width)]
+            for y in range(height)]
+        for t in range(duration)]
 
     for i in range(duration):
         grid[i] = offset_grid[i]
 
+
 def standard_form_literal(cell):
     """Tidies up a cell into a standard form"""
 
-    cell = re.sub('\xe2\x80\x99', "'", cell) # Replace alternative "'" character
+    cell = re.sub('\xe2\x80\x99', "'", cell)  # Replace alternative "'" character
     cell = re.sub("'+$", "'", cell)  # Remove duplicate "'"s
     cell = re.sub("^(--)*", "", cell)  # Cancel double "-" signs
     # Other simplifications
-    to_replace   = ["-*", "-*'", "-0", "-0'", "-1", "-1'"]
     replacements = {
-        "-*":"*",
-        "-*'":"*'",
-        "-0":"1",
-        "-0'":"1'",
-        "-1":"0",
-        "-1'":"0'"
+        "-*": "*",
+        "-*'": "*'",
+        "-0": "1",
+        "-0'": "1'",
+        "-1": "0",
+        "-1'": "0'"
     }
     if cell in replacements:
         cell = replacements[cell]
