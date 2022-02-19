@@ -1,11 +1,11 @@
 import copy
-import src.LLS_files as LLS_files
-import src.LLS_formatting as LLS_formatting
-import src.LLS_rules as LLS_rules
-import src.LLS_defaults as LLS_defaults
+import src.files as LLS_files
+import src.formatting as LLS_formatting
+import src.rules as LLS_rules
+import src.defaults as LLS_defaults
 from src.SearchPattern import SearchPattern
-from src.LLS_messages import print_message
-from src.LLS_literal_manipulation import neighbours_from_coordinates, variable_from_literal, negate
+from src.messages import print_message
+from src.literal_manipulation import neighbours_from_coordinates, variable_from_literal, negate
 
 
 def search_pattern_from_string(input_string, indent = 0):

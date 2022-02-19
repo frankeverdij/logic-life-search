@@ -1,8 +1,8 @@
 import re
 import copy
-import src.LLS_rules as LLS_rules
-from src.LLS_messages import print_message
-from src.LLS_literal_manipulation import standard_form_literal
+import src.rules as LLS_rules
+from src.messages import print_message
+from src.literal_manipulation import standard_form_literal
 
 def parse_input_string(input_string, indent = 0):
     """Transforms a "search pattern" given as a string into a SearchPattern"""

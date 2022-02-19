@@ -1,5 +1,5 @@
-from src.LLS_messages import print_message
-from src.LLS_literal_manipulation import negate, variable_from_literal
+from src.messages import print_message
+from src.literal_manipulation import negate, variable_from_literal
 
 class ClauseList:
 

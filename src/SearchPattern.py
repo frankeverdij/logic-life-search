@@ -1,16 +1,16 @@
 import collections
 import copy
 import itertools
-import src.LLS_taocp_variable_scheme as LLS_taocp_variable_scheme
-import src.LLS_formatting as LLS_formatting
-import src.LLS_rules as LLS_rules
-import src.LLS_defaults as LLS_defaults
-import src.LLS_files as LLS_files
-import src.LLS_literal_manipulation as LLS_literal_manipulation
+import src.taocp_variable_scheme as LLS_taocp_variable_scheme
+import src.formatting as LLS_formatting
+import src.rules as LLS_rules
+import src.defaults as LLS_defaults
+import src.files as LLS_files
+import src.literal_manipulation as LLS_literal_manipulation
 from src.ClauseList import ClauseList
 from src.UnsatInPreprocessing import UnsatInPreprocessing
-from src.LLS_messages import print_message
-from src.LLS_literal_manipulation import negate, variable_from_literal, neighbours_from_coordinates, implies
+from src.messages import print_message
+from src.literal_manipulation import negate, variable_from_literal, neighbours_from_coordinates, implies
 
 class SearchPattern:
 

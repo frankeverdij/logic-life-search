@@ -6,16 +6,16 @@ import argparse
 import sys
 import os
 import re
-import src.LLS_main
-import src.LLS_search_patterns
-import src.LLS_rules
-import src.LLS_files
-import src.LLS_defaults
-import src.LLS_literal_manipulation
-import src.LLS_formatting
+import src.main
+import src.search_patterns
+import src.rules
+import src.files
+import src.defaults
+import src.literal_manipulation
+import src.formatting
 from src.SearchPattern import SearchPattern
-from src.LLS_literal_manipulation import negate, variable_from_literal
-from src.LLS_messages import print_message
+from src.literal_manipulation import negate, variable_from_literal
+from src.messages import print_message
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -111,7 +111,7 @@ parser.add_argument(
 parser.add_argument(
     '-v', '--verbosity',
     type = int,
-    default = src.LLS_defaults.verbosity,
+    default = src.defaults.verbosity,
     help = """Set the verbosity. Options: 0 - No output. Only useful with -o option to save solution to file. 1 - Only display the solution. 2 (Default) - Displays some information about what the program is doing, some statistics, and the solution. 3 - A huge torrent of information."""
 )
 parser.add_argument(
@@ -195,7 +195,7 @@ args = parser.parse_args()
 lls_dir = os.path.dirname(os.path.realpath(__file__))
 
 indent = 0
-src.LLS_defaults.verbosity = args.verbosity
+src.defaults.verbosity = args.verbosity
 
 print_message('', indent = indent)
 
@@ -213,11 +213,11 @@ if args.substitute_solution:
         background_ignore_transition,
         rule,
         DIMACS_literal_from_variable
-    ) = src.LLS_files.object_from_file(
+    ) = src.files.object_from_file(
         args.substitute_solution[0],
         indent = indent
     )
-    solution = src.LLS_files.string_from_file(args.substitute_solution[1], indent = indent)
+    solution = src.files.string_from_file(args.substitute_solution[1], indent = indent)
     solution = re.sub("v ","",re.sub("s ","",solution))
     search_pattern = SearchPattern(
         grid,
@@ -241,7 +241,7 @@ if args.substitute_solution:
     print_message(output_string + "\n", 1, indent = indent)
     if output_file_name:
         print_message('Writing to output file...', indent = indent)
-        src.LLS_files.append_to_file_from_string(output_file_name, output_string, indent = indent + 1)
+        src.files.append_to_file_from_string(output_file_name, output_string, indent =indent + 1)
         print_message('Done\n', indent = indent)
 
 else:
@@ -349,7 +349,7 @@ else:
     assert number_of_search_patterns < 2, "Too many search patterns specified"
 
     ignore_transition = None # Default value
-    rule = src.LLS_rules.rule_from_rulestring(args.rule, indent = indent + 1)
+    rule = src.rules.rule_from_rulestring(args.rule, indent =indent + 1)
 
     # Add "user_input_" to user's variable names, to prevent collisions"
     if args.rule != None and args.rule.strip()[0] == "{":
@@ -367,19 +367,19 @@ else:
             indent = indent + 1
         )
         if os.path.isfile(args.background[0]):
-            input_string = src.LLS_files.string_from_file(
+            input_string = src.files.string_from_file(
                 args.background[0],
                 indent = indent + 2
             )
         elif os.path.isfile(lls_dir +
                 "/backgrounds/" + args.background[0]):
-            input_string = src.LLS_files.string_from_file(lls_dir +
+            input_string = src.files.string_from_file(lls_dir +
                 "/backgrounds/" + args.background[0],
-                indent = indent + 2
-            )
+                                                      indent = indent + 2
+                                                      )
         else:
             assert False, "Search pattern file not found"
-        background_grid, background_ignore_transition = src.LLS_search_patterns.search_pattern_from_string(
+        background_grid, background_ignore_transition = src.search_patterns.search_pattern_from_string(
             input_string,
             indent = indent + 2
         )
@@ -388,15 +388,15 @@ else:
         (
             background_grid,
             background_ignore_transition
-        ) = src.LLS_search_patterns.search_pattern_from_string(
-            src.LLS_files.string_from_file(lls_dir +
-                "/backgrounds/" + src.LLS_defaults.background,
-            )
+        ) = src.search_patterns.search_pattern_from_string(
+            src.files.string_from_file(lls_dir +
+                "/backgrounds/" + src.defaults.background,
+                                       )
         )
 
     if args.background_offset:
-        src.LLS_literal_manipulation.offset_background(background_grid, *args.background_offset)
-        src.LLS_literal_manipulation.offset_background(background_ignore_transition, *args.background_offset)
+        src.literal_manipulation.offset_background(background_grid, *args.background_offset)
+        src.literal_manipulation.offset_background(background_ignore_transition, *args.background_offset)
 
 
     if args.input_file_name:
@@ -407,18 +407,18 @@ else:
             indent = indent + 1
         )
         if os.path.isfile(args.input_file_name):
-            input_string = src.LLS_files.string_from_file(
+            input_string = src.files.string_from_file(
                 args.input_file_name,
                 indent = indent + 2
             )
         elif os.path.isfile(lls_dir + "/search_patterns/" + args.input_file_name):
-            input_string = src.LLS_files.string_from_file(
+            input_string = src.files.string_from_file(
                 lls_dir + "/search_patterns/" + args.input_file_name,
                 indent = indent + 2
             )
         else:
             assert False, "Search pattern file not found"
-        grid, ignore_transition = src.LLS_search_patterns.search_pattern_from_string(
+        grid, ignore_transition = src.search_patterns.search_pattern_from_string(
             input_string,
             indent = indent + 2
         )
@@ -438,7 +438,7 @@ else:
             width = args.blank_search_pattern[0]
             height = args.blank_search_pattern[1]
             duration = args.blank_search_pattern[2]
-        grid = src.LLS_search_patterns.blank_search_pattern(width, height, duration, indent = indent + 1)
+        grid = src.search_patterns.blank_search_pattern(width, height, duration, indent =indent + 1)
 
     if args.check_orphan:
         if os.path.isfile(args.check_orphan[0]):
@@ -451,7 +451,7 @@ else:
             number_of_generations = int(args.check_orphan[1])
         else:
             number_of_generations = 1
-        grid, ignore_transition = src.LLS_search_patterns.check_orphan(file_name, number_of_generations, indent = indent + 1)
+        grid, ignore_transition = src.search_patterns.check_orphan(file_name, number_of_generations, indent =indent + 1)
 
     if args.stator:
         if os.path.isfile(args.stator[0]):
@@ -460,13 +460,13 @@ else:
             file_name = lls_dir + "/search_patterns/" + args.stator[0]
         else:
             assert False, "Search pattern file not found"
-        grid, _ = src.LLS_formatting.parse_input_string(
-            src.LLS_files.string_from_file(
+        grid, _ = src.formatting.parse_input_string(
+            src.files.string_from_file(
                 file_name,
                 indent = indent + 1
             ),
         indent = indent + 1)
-        grid = src.LLS_search_patterns.stator_search_pattern(grid[0], rule, background_grid, indent = indent + 1)
+        grid = src.search_patterns.stator_search_pattern(grid[0], rule, background_grid, indent =indent + 1)
 
     if number_of_search_patterns == 0:
         print_message(
@@ -476,7 +476,7 @@ else:
         )
         input_string = sys.stdin.read()
         print_message('\n', 1, indent = indent + 1)
-        grid, ignore_transition = src.LLS_search_patterns.search_pattern_from_string(input_string, indent = indent + 1)
+        grid, ignore_transition = src.search_patterns.search_pattern_from_string(input_string, indent =indent + 1)
 
     # Create the search pattern
     search_pattern = SearchPattern(
@@ -494,7 +494,7 @@ else:
 
 
     # LLS_main.LLS does all the hard work
-    src.LLS_main.LLS(
+    src.main.LLS(
         search_pattern,
         symmetries = symmetries,
         asymmetries = asymmetries,

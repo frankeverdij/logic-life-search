@@ -5,9 +5,9 @@ import os
 import errno
 import sys
 import re
-import src.LLS_files as LLS_files
-import src.LLS_defaults as LLS_defaults
-from src.LLS_messages import print_message
+import src.files as LLS_files
+import src.defaults as LLS_defaults
+from src.messages import print_message
 
 
 def SAT_solve(search_pattern, solver=None, parameters=None, timeout=None, save_dimacs = None, dry_run = None, indent = 0):

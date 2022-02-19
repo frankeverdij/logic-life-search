@@ -1,7 +1,7 @@
 import re
 import ast
-from src.LLS_literal_manipulation import variable_from_literal, standard_form_literal
-from src.LLS_messages import print_message
+from src.literal_manipulation import variable_from_literal, standard_form_literal
+from src.messages import print_message
 
 
 possible_transitions = {"0":sorted("c"),

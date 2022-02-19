@@ -1,8 +1,8 @@
 import os
-import src.LLS_files as LLS_files
-import src.LLS_SAT_solvers as LLS_SAT_solvers
+import src.files as LLS_files
+import src.sat_solvers as LLS_SAT_solvers
 from src.UnsatInPreprocessing import UnsatInPreprocessing
-from src.LLS_messages import print_message
+from src.messages import print_message
 
 
 def LLS(
