@@ -295,10 +295,7 @@ def preprocess_and_solve(search_pattern,
             indent=indent
         )
     if not dry_run:
-        print_message(
-            'Time taken: ' + str(time_taken) + " seconds\n",
-            indent=indent
-        )
+        print_message('Time taken: ' + str(time_taken) + " seconds\n", indent=indent)
     return \
         solution,\
         sat, \
@@ -349,14 +346,8 @@ def preprocess(
     search_pattern.remove_redundancies(indent=indent + 1)
     search_pattern.standardise_varaibles_names(indent=indent + 1)
 
-    print_message(
-        "Search grid:\n",
-        3,
-        indent=indent + 1)
-    print_message(
-        search_pattern.make_string(pattern_output_format="csv", show_background=True),
-        3,
-        indent=indent + 2)
+    print_message("Search grid:\n", 3, indent=indent + 1)
+    print_message(search_pattern.make_string(pattern_output_format="csv", show_background=True), 3, indent=indent + 2)
 
     # Constraints that are enforced by clauses
     for asymmetry in asymmetries:

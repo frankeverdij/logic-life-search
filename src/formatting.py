@@ -1,7 +1,7 @@
 import re
 import copy
 from src.rules import rulestring_from_rule
-from src.messages import print_message
+from src.messages import print_message, format_carriage_returns
 from src.literal_manipulation import standard_form_literal
 
 
@@ -10,11 +10,7 @@ def parse_input_string(input_string, indent=0):
 
     print_message("Parsing input pattern...", 3, indent=indent)
 
-    # Convert any newline format (\r, \n, \n\r, \r\n) to just \n
-    if '\r' in input_string and '\n' not in input_string:
-        input_string = re.sub('\r', '\n', input_string)
-    else:
-        input_string = re.sub('\r', '', input_string)
+    input_string = format_carriage_returns(input_string)
 
     # Remove any comments
     input_string = re.sub('#.*', '', input_string)

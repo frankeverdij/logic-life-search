@@ -195,7 +195,7 @@ def rule_from_rulestring(rulestring, indent = 0):
 
         new_rulestring = rulestring_from_rule(rule)
         if original_rulestring != new_rulestring:
-            print_message("Rulestring parsed as: " + new_rulestring,3, indent = indent)
+            print_message("Rulestring parsed as: " + new_rulestring, 3, indent=indent)
 
         return rule
 

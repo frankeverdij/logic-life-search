@@ -362,11 +362,7 @@ else:
 
     if args.background:
         # Check current directory and then backgrounds/
-        print_message(
-            'Creating background from file "' + args.background[0] + '" ...',
-            3,
-            indent=indent + 1
-        )
+        print_message('Creating background from file "' + args.background[0] + '" ...', 3, indent=indent + 1)
         if os.path.isfile(args.background[0]):
             input_string = src.files.string_from_file(
                 args.background[0],
@@ -401,11 +397,7 @@ else:
 
     if args.input_file_name:
         # Check current directory and then search_pattern/
-        print_message(
-            'Creating search pattern from file "' + args.input_file_name + '" ...',
-            3,
-            indent=indent + 1
-        )
+        print_message('Creating search pattern from file "' + args.input_file_name + '" ...', 3, indent=indent + 1)
         if os.path.isfile(args.input_file_name):
             input_string = src.files.string_from_file(
                 args.input_file_name,
@@ -471,11 +463,7 @@ else:
         grid = src.search_patterns.stator_search_pattern(grid[0], rule, background_grid, indent=indent + 1)
 
     if number_of_search_patterns == 0:
-        print_message(
-            '\nNo pattern specified, getting from STDIN... (End with EOF character)\n',
-            2,
-            indent=indent + 1
-        )
+        print_message('\nNo pattern specified, getting from STDIN... (End with EOF character)\n', 2, indent=indent + 1)
         input_string = sys.stdin.read()
         print_message('\n', 1, indent=indent + 1)
         grid, ignore_transition = src.search_patterns.search_pattern_from_string(input_string, indent=indent + 1)

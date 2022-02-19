@@ -12,11 +12,7 @@ def search_pattern_from_string(input_string, indent = 0):
     """Create the grid and ignore_transitionof a search pattern from the given string"""
     grid, ignore_transition = LLS_formatting.parse_input_string(input_string, indent = indent)
 
-    print_message(
-        "Pattern parsed as:\n" + LLS_formatting.make_csv(grid, ignore_transition) + "\n",
-        3,
-        indent = indent
-    )
+    print_message("Pattern parsed as:\n" + LLS_formatting.make_csv(grid, ignore_transition) + "\n", 3, indent=indent)
 
     for t, generation in enumerate(grid):
         for y, row in enumerate(generation):
@@ -29,28 +25,20 @@ def search_pattern_from_string(input_string, indent = 0):
 
 
 def blank_search_pattern(width, height, duration, indent = 0):
-    print_message('Creating spaceship search pattern...', 3, indent = indent)
+    print_message('Creating spaceship search pattern...', 3, indent=indent)
 
     grid = [[["*" for i in range(width)] for j in range(height)] for k in range(duration)]
 
-    print_message("Pattern created:\n" + LLS_formatting.make_csv(grid) + "\n", 3, indent = indent+1)
-    print_message('Done\n', 3, indent = indent)
+    print_message("Pattern created:\n" + LLS_formatting.make_csv(grid) + "\n", 3, indent=indent + 1)
+    print_message('Done\n', 3, indent=indent)
     return grid
 
 def check_orphan(file_name, number_of_generations, indent = 0):
-    print_message(
-        'Creating search pattern to see if file "' + file_name + '" contains an orphan...',
-        3,
-        indent = indent
-    )
+    print_message('Creating search pattern to see if file "' + file_name + '" contains an orphan...', 3, indent=indent)
     input_string = LLS_files.string_from_file(file_name, indent = indent + 1)
     grid, _ = LLS_formatting.parse_input_string(input_string, indent = indent + 1)
     assert len(grid) == 1, "More than one generation in input"
-    print_message(
-        "Pattern parsed as:\n" + LLS_formatting.make_csv(grid) + "\n",
-        3,
-        indent = indent+1
-    )
+    print_message("Pattern parsed as:\n" + LLS_formatting.make_csv(grid) + "\n", 3, indent=indent + 1)
 
     pattern = grid[0]
     width = len(pattern[0])
@@ -88,13 +76,13 @@ def check_orphan(file_name, number_of_generations, indent = 0):
                 grid[-1][y][x] = "0"
                 ignore_transition[-1][y][x] = True
 
-    print_message("Search pattern:\n" + LLS_formatting.make_csv(grid, ignore_transition) + "\n", 3, indent = indent+1)
-    print_message('Done\n', 3, indent = indent)
+    print_message("Search pattern:\n" + LLS_formatting.make_csv(grid, ignore_transition) + "\n", 3, indent=indent + 1)
+    print_message('Done\n', 3, indent=indent)
     return grid, ignore_transition
 
 
 def glider_eater_search_pattern(width,height,digestion_time,symmetry="C1",indent = 0):
-    print_message('Creating eater search pattern...', 3, indent = indent)
+    print_message('Creating eater search pattern...', 3, indent=indent)
 
     glider_in = [
                    [["1","0","0","0","0"],
@@ -155,12 +143,13 @@ def glider_eater_search_pattern(width,height,digestion_time,symmetry="C1",indent
             for x in range(1,width-1):
                 search_pattern.grid[t][y][x] = "*"
     search_pattern.standardise_varaibles_names(indent = indent + 1)
-    print_message("Pattern created:\n" + search_pattern.make_string(pattern_output_format = "csv") + "\n", 3, indent = indent+1)
-    print_message('Done\n', 3, indent = indent)
+    print_message("Pattern created:\n" + search_pattern.make_string(pattern_output_format="csv") + "\n", 3,
+                  indent=indent + 1)
+    print_message('Done\n', 3, indent=indent)
     return search_pattern.grid, search_pattern.ignore_transition
 
 def lwss_eater_search_pattern(width,height,digestion_time,symmetry="C1",indent = 0):
-    print_message('Creating lwss search pattern...', 3, indent = indent)
+    print_message('Creating lwss search pattern...', 3, indent=indent)
     assert height % 2 == 1, "Height must be odd"
 
     lwss_in = [
@@ -279,13 +268,14 @@ def lwss_eater_search_pattern(width,height,digestion_time,symmetry="C1",indent =
             for x in range(1,width-1):
                 search_pattern.grid[t][y][x] = "*"
     search_pattern.standardise_varaibles_names(indent = indent + 1)
-    print_message("Pattern created:\n" + search_pattern.make_string(pattern_output_format = "csv") + "\n", 3, indent = indent+1)
-    print_message('Done\n', 3, indent = indent)
+    print_message("Pattern created:\n" + search_pattern.make_string(pattern_output_format="csv") + "\n", 3,
+                  indent=indent + 1)
+    print_message('Done\n', 3, indent=indent)
     return search_pattern.grid, search_pattern.ignore_transition
 
 
 def hwss_eater_search_pattern(width,height,digestion_time,symmetry="C1",indent = 0):
-    print_message('Creating lwss search pattern...', 3, indent = indent)
+    print_message('Creating lwss search pattern...', 3, indent=indent)
     assert height % 2 == 1, "Height must be odd"
 
     hwss_in = [
@@ -479,8 +469,9 @@ def hwss_eater_search_pattern(width,height,digestion_time,symmetry="C1",indent =
             for x in range(1,width-1):
                 search_pattern.grid[t][y][x] = "*"
     search_pattern.standardise_varaibles_names(indent = indent + 1)
-    print_message("Pattern created:\n" + search_pattern.make_string(pattern_output_format = "csv") + "\n", 3, indent = indent+1)
-    print_message('Done\n', 3, indent = indent)
+    print_message("Pattern created:\n" + search_pattern.make_string(pattern_output_format="csv") + "\n", 3,
+                  indent=indent + 1)
+    print_message('Done\n', 3, indent=indent)
     return search_pattern.grid, search_pattern.ignore_transition
 
 def stator_search_pattern(pattern, rule=None, background_grid=None, indent=0):
@@ -499,9 +490,9 @@ def stator_search_pattern(pattern, rule=None, background_grid=None, indent=0):
     height = len(pattern)
     grid = [pattern]
     duration = 1
-    print_message('Creating oscillator...', 3, indent = indent)
+    print_message('Creating oscillator...', 3, indent=indent)
     while True:
-        print_message('Generation: ' + str(duration), 3, indent = indent + 1)
+        print_message('Generation: ' + str(duration), 3, indent=indent + 1)
         grid.append([["0" for x in range(width)] for y in range(height)])
         duration += 1
         for x in range(width):
@@ -519,5 +510,5 @@ def stator_search_pattern(pattern, rule=None, background_grid=None, indent=0):
                 number_of_variables += 1
     grid = [[["0" for x in range(width)]] + generation + [["0" for x in range(width)]] for generation in grid]
     grid = [[["0"] + row + ["0"] for row in generation] for generation in grid]
-    print_message('Done\n', 3, indent = indent)
+    print_message('Done\n', 3, indent=indent)
     return grid
