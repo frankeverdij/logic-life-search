@@ -339,19 +339,19 @@ def preprocess(
     print_message('Preprocessing...', indent=indent)
 
     # Constraints that change the grid
-    search_pattern.standardise_varaibles_names(indent=indent + 1)
+    search_pattern.standardise_variables_names(indent=indent + 1)
     for symmetry in symmetries:
-        search_pattern.force_symmetry(symmetry, indent=indent + 1)
+        search_pattern.force_symmetry(symmetry)
 
     search_pattern.remove_redundancies(indent=indent + 1)
-    search_pattern.standardise_varaibles_names(indent=indent + 1)
+    search_pattern.standardise_variables_names(indent=indent + 1)
 
     print_message("Search grid:\n", 3, indent=indent + 1)
     print_message(search_pattern.make_string(pattern_output_format="csv", show_background=True), 3, indent=indent + 2)
 
     # Constraints that are enforced by clauses
     for asymmetry in asymmetries:
-        search_pattern.force_asymmetry(asymmetry, indent=indent + 1)
+        search_pattern.force_asymmetry(asymmetry)
     for constraint in population_at_most:
         search_pattern.force_population_at_most(constraint, indent=indent + 1)
     for constraint in population_at_least:

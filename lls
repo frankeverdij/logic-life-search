@@ -225,8 +225,7 @@ if args.substitute_solution:
         background_grid=background_grid,
         background_ignore_transition=background_ignore_transition,
         rule=rule,
-        add_border=False,
-        indent=indent
+        add_border=False
     )
     search_pattern.clauses.DIMACS_literal_from_variable = DIMACS_literal_from_variable
     solution = search_pattern.substitute_solution(
@@ -474,8 +473,7 @@ else:
         ignore_transition=ignore_transition,
         background_grid=background_grid,
         background_ignore_transition=background_ignore_transition,
-        rule=rule,
-        indent=indent + 1
+        rule=rule
     )
 
     print_message('Done\n', indent=indent)

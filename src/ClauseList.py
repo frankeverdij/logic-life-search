@@ -7,7 +7,7 @@ class ClauseList:
     def __init__(self):
         self.clause_set = set()
         self.number_of_variables = 0
-        self.DIMACS_literal_from_variable = {}
+        self.dimacs_literal_from_variable = {}
 
     def __eq__(self, other):
         if other is None:
@@ -16,7 +16,7 @@ class ClauseList:
             return (
                     self.clause_set == other.clause_set
                     and self.number_of_variables == other.number_of_variables
-                    and self.DIMACS_literal_from_variable == other.DIMACS_literal_from_variable
+                    and self.dimacs_literal_from_variable == other.dimacs_literal_from_variable
             )
 
     def __ne__(self, other):
@@ -33,12 +33,12 @@ class ClauseList:
             else:
                 (variable, negated) = variable_from_literal(literal)
                 # If we haven't seen it before then add it to the dictionary
-                if variable not in self.DIMACS_literal_from_variable:
-                    self.DIMACS_literal_from_variable[variable] = str(self.number_of_variables + 1)
+                if variable not in self.dimacs_literal_from_variable:
+                    self.dimacs_literal_from_variable[variable] = str(self.number_of_variables + 1)
                     self.number_of_variables += 1
                 elif negate(literal) in clause:
                     return
-                dimacs_clause.append(negate(self.DIMACS_literal_from_variable[variable], negated, dimacs=True))
+                dimacs_clause.append(negate(self.dimacs_literal_from_variable[variable], negated, dimacs=True))
         dimacs_clause.sort()
         dimacs_clause.append("0\n")
         self.clause_set.add(" ".join(dimacs_clause))

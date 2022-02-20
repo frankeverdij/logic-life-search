@@ -1,7 +1,8 @@
 import re
 import copy
 from src.rules import rulestring_from_rule
-from src.messages import print_message, format_carriage_returns
+from src.messages import print_message
+from src.utilities import format_carriage_returns, make_grid
 from src.literal_manipulation import standard_form_literal
 
 
@@ -151,7 +152,7 @@ def make_csv(
 def space_evenly(grid, ignore_transition=None):
     grid = copy.deepcopy(grid)
     if ignore_transition is None:
-        ignore_transition = [[[False for _ in row] for row in generation] for generation in grid]
+        ignore_transition = make_grid(False, template=grid)
 
     lengths = []
     for t, generation in enumerate(grid):
