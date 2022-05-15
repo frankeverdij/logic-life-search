@@ -75,7 +75,7 @@ def use_solver(solver, file_name, parameters=None, timeout=None, indent=0):
 
     solver_path = sys.path[0] + "/solvers/" + solver
 
-    if solver in ["MapleCOMSPS", "MapleCOMSPS_LRB", "riss"]:
+    if solver in [riss"]:
         command = [solver_path, file_name, "temp_SAT_solver_output"] + parameter_list
     elif solver in ["lingeling", "plingeling", "treengeling", "cadical", "kissat"]:
         command = [solver_path, file_name] + parameter_list
@@ -116,7 +116,7 @@ def use_solver(solver, file_name, parameters=None, timeout=None, indent=0):
 
         print_message('Formatting SAT solver output...', 3, indent=indent)
 
-        if solver in ["MapleCOMSPS", "MapleCOMSPS_LRB", "riss"]:
+        if solver in ["riss"]:
             solution = src.files.string_from_file("temp_SAT_solver_output", indent=indent + 1)
             print_message('Removing SAT solver output file...', 3, indent=indent + 1)
             os.remove("temp_SAT_solver_output")
@@ -137,9 +137,6 @@ def use_solver(solver, file_name, parameters=None, timeout=None, indent=0):
             except IndexError:
                 solution = "UNSAT\n"
 
-        if solver == "MapleCOMSPS_LRB":
-            if solution == "":
-                solution = "UNSAT\n"
         if solver == "riss":
             solution = re.sub("s ", "", solution)
             solution = re.sub("v ", "", solution)
