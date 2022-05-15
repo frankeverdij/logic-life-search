@@ -20,19 +20,7 @@ def sat_solve(search_pattern, solver=None, parameters=None, timeout=None, save_d
     if solver is None:
         solver = src.defaults.solver
 
-    if solver not in [
-        "minisat",
-        "MapleCOMSPS",
-        "MapleCOMSPS_LRB",
-        "riss",
-        "glucose",
-        "glucose-syrup",
-        "lingeling",
-        "plingeling",
-        "treengeling",
-        "cadical",
-        "kissat"
-    ]:
+    if solver not in src.defaults.supported_solvers:
         raise ValueError
 
     if save_dimacs is None:
@@ -87,7 +75,7 @@ def use_solver(solver, file_name, parameters=None, timeout=None, indent=0):
 
     solver_path = sys.path[0] + "/solvers/" + solver
 
-    if solver in ["minisat", "MapleCOMSPS", "MapleCOMSPS_LRB", "riss"]:
+    if solver in ["MapleCOMSPS", "MapleCOMSPS_LRB", "riss"]:
         command = [solver_path, file_name, "temp_SAT_solver_output"] + parameter_list
     elif solver in ["lingeling", "plingeling", "treengeling", "cadical", "kissat"]:
         command = [solver_path, file_name] + parameter_list
@@ -128,7 +116,7 @@ def use_solver(solver, file_name, parameters=None, timeout=None, indent=0):
 
         print_message('Formatting SAT solver output...', 3, indent=indent)
 
-        if solver in ["minisat", "MapleCOMSPS", "MapleCOMSPS_LRB", "riss"]:
+        if solver in ["MapleCOMSPS", "MapleCOMSPS_LRB", "riss"]:
             solution = src.files.string_from_file("temp_SAT_solver_output", indent=indent + 1)
             print_message('Removing SAT solver output file...', 3, indent=indent + 1)
             os.remove("temp_SAT_solver_output")
