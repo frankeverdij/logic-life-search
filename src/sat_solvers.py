@@ -17,8 +17,6 @@ def sat_solve(search_pattern, solver=None, parameters=None, timeout=None, save_d
 
     if solver is None:
         solver = src.defaults.solver
-    if solver not in src.defaults.supported_solvers:
-        raise ValueError
 
     if save_dimacs is not None:
         if not isinstance(save_dimacs, str):
