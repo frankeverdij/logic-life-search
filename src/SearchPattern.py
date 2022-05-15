@@ -817,9 +817,6 @@ class SearchPattern:
 
         print_message('Substituting solution back into search grid...', 3, indent=indent)
 
-        # Remove the first line that just says "SAT", and split into a list of literals
-        solution = set(solution.split("\n")[1].split())
-
         for t, generation in enumerate(grid):
             for y, row in enumerate(generation):
                 for x, cell in enumerate(row):

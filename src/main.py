@@ -1,6 +1,6 @@
 import os
 import src.files
-import src.sat_solvers
+from src.sat_solvers import Status, sat_solve
 from src.UnsatInPreprocessing import UnsatInPreprocessing
 from src.messages import print_message
 
@@ -43,8 +43,8 @@ def lls(
     if symmetries is None:
         symmetries = []
     (
+        status,
         solution,
-        sat,
         number_of_cells,
         number_of_variables,
         number_of_clauses,
@@ -77,7 +77,7 @@ def lls(
 
     solutions = []
 
-    if sat == "SAT":
+    if status == Status.SAT:
         determined = search_pattern.deterministic(indent=indent)
         show_background = search_pattern.background_nontrivial()
         solutions.append(solution)
@@ -88,7 +88,7 @@ def lls(
             indent=indent
         )
     else:
-        output_string = ["Unsatisfiable", "Timed Out", "Dry run"][["UNSAT", "TIMEOUT", "DRYRUN"].index(sat)]
+        output_string = status.value
     print_message(output_string + "\n", 1, indent=indent)
     if output_file_name:
         print_message('Writing to output file...', indent=indent)
@@ -96,20 +96,20 @@ def lls(
         print_message('Done\n', indent=indent)
 
     # Deal with the case where we need more than one solution
-    if number_of_solutions and sat == "SAT" and not dry_run:
+    if number_of_solutions and status == Status.SAT and not dry_run:
         if number_of_solutions != "Infinity":
             number_of_solutions = int(number_of_solutions)
             enough_solutions = (len(solutions) >= number_of_solutions)
         else:
             enough_solutions = False
 
-        while sat == "SAT" and not enough_solutions:
+        while status == Status.SAT and not enough_solutions:
             # Force the new solution to be different
             search_pattern.force_distinct(solution, determined=determined)
             # No need to apply the constraints again
             (
+                status,
                 solution,
-                sat,
                 _,
                 _,
                 _,
@@ -126,12 +126,12 @@ def lls(
                 indent=indent
             )
             time_taken += extra_time_taken
-            if sat == "SAT":
+            if status == Status.SAT:
                 solutions.append(solution)
                 output_string = solution.make_string(pattern_output_format=pattern_output_format, determined=determined,
                                                      show_background=show_background, indent=indent)
             else:
-                output_string = ["Unsatisfiable", "Timed Out", "Dry run"][["UNSAT", "TIMEOUT", None].index(sat)]
+                output_string = status.value
             print_message(output_string + "\n", 1, indent=indent)
             if output_file_name:
                 print_message('Writing output file...', indent=indent)
@@ -140,11 +140,11 @@ def lls(
 
             if number_of_solutions != "Infinity":
                 enough_solutions = (len(solutions) >= number_of_solutions)
-        sat = "SAT"
+        status = Status.SAT
         print_message('Total solver time: ' + str(time_taken), indent=indent)
 
     return solutions, \
-        sat, \
+        status, \
         number_of_cells, \
         number_of_variables, \
         number_of_clauses, \
@@ -281,24 +281,36 @@ def preprocess_and_solve(search_pattern,
         print_message("Unsatisfiability proved in preprocessing", indent=indent + 1)
         print_message('Done\n', indent=indent)
     else:
+
+        if save_dimacs is not None:
+            if not isinstance(save_dimacs, str):
+                file_number = 0
+                while True:
+                    save_dimacs = "lls_dimacs" + str(file_number) + ".cnf"
+                    file_number += 1
+                    if not os.path.isfile(save_dimacs):
+                        break
+            search_pattern.clauses.make_file(save_dimacs, indent=indent + 1)
+    if not dry_run:
         (
+            status,
             solution,
-            sat,
             time_taken
-        ) = src.sat_solvers.sat_solve(
+        ) = sat_solve(
             search_pattern,
             solver=solver,
             parameters=parameters,
             timeout=timeout,
-            save_dimacs=save_dimacs,
-            dry_run=dry_run,
             indent=indent
         )
-    if not dry_run:
         print_message('Time taken: ' + str(time_taken) + " seconds\n", indent=indent)
+    else:
+         status = Status.DRYRUN
+         solution = None
+         time_taken = None
     return \
+        status, \
         solution,\
-        sat, \
         number_of_cells,\
         number_of_variables, \
         number_of_clauses, \
