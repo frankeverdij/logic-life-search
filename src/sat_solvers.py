@@ -75,9 +75,7 @@ def use_solver(solver, file_name, parameters=None, timeout=None, indent=0):
 
     solver_path = sys.path[0] + "/solvers/" + solver
 
-    if solver in [riss"]:
-        command = [solver_path, file_name, "temp_SAT_solver_output"] + parameter_list
-    elif solver in ["lingeling", "plingeling", "treengeling", "cadical", "kissat"]:
+    if solver in ["lingeling", "plingeling", "treengeling", "cadical", "kissat"]:
         command = [solver_path, file_name] + parameter_list
     elif solver in ["glucose", "glucose-syrup"]:
         command = [solver_path, file_name, "-model"] + parameter_list
@@ -116,12 +114,7 @@ def use_solver(solver, file_name, parameters=None, timeout=None, indent=0):
 
         print_message('Formatting SAT solver output...', 3, indent=indent)
 
-        if solver in ["riss"]:
-            solution = src.files.string_from_file("temp_SAT_solver_output", indent=indent + 1)
-            print_message('Removing SAT solver output file...', 3, indent=indent + 1)
-            os.remove("temp_SAT_solver_output")
-            print_message('Done\n', 3, indent=indent + 1)
-        elif solver in ["lingeling", "plingeling", "treengeling", "cadical", "kissat"]:
+        if solver in ["lingeling", "plingeling", "treengeling", "cadical", "kissat"]:
             solution = str(out)
             solution = solution.split("\ns ")
             solution = solution[1]
@@ -137,9 +130,6 @@ def use_solver(solver, file_name, parameters=None, timeout=None, indent=0):
             except IndexError:
                 solution = "UNSAT\n"
 
-        if solver == "riss":
-            solution = re.sub("s ", "", solution)
-            solution = re.sub("v ", "", solution)
         if "UNSAT" in solution.upper():
             solution = "UNSAT\n"
 
