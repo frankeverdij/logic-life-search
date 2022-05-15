@@ -50,10 +50,10 @@ def parse_input_string(input_string, indent=0):
               for cell in row] for row in generation] for generation in grid]
 
     # Create array which says when a "'" means that a transition should be ignored
-    ignore_transition = [[[(cell[-1] == "'")
+    ignore_transition = [[[(cell[-1] in "'’")
                            for cell in row] for row in generation] for generation in grid]
-    grid = [[[cell.rstrip("'")  # The "'"s are now unnecessary
-              for cell in line] for line in generation] for generation in grid]
+    grid = [[[cell.rstrip("'’")  # The "'"s are now unnecessary
+              for cell in row] for row in generation] for generation in grid]
 
     print_message("Done\n", 3, indent=indent)
 
