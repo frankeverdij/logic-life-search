@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#! /usr/bin/env python3
 
 """Handles the command line input and passes it to LLS_main"""
 
@@ -200,7 +200,7 @@ src.defaults.verbosity = args.verbosity
 print_message('', indent=indent)
 
 if args.version:
-    print_message('Version 1\n', 1, indent=indent)
+    print_message('Version 2\n', 1, indent=indent)
 pattern_output_format = args.csv
 output_file_name = args.output_file_name
 
