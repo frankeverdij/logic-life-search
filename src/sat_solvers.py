@@ -14,46 +14,30 @@ def sat_solve(search_pattern, solver=None, parameters=None, timeout=None, save_d
     """Solve the given DIMACS problem, using the specified SAT solver"""
 
     print_message('Solving...', indent=indent)
-    indent += 1
-    print_message('Preparing SAT solver input...', 3, indent=indent)
 
     if solver is None:
         solver = src.defaults.solver
-
     if solver not in src.defaults.supported_solvers:
         raise ValueError
 
-    if save_dimacs is None:
-        file_number = 0
-        while True:
-            dimacs_file = "lls_dimacs" + str(file_number) + ".cnf"
-            file_number += 1
-            if not os.path.isfile(dimacs_file):
-                break
-    else:
-        dimacs_file = save_dimacs
+    if save_dimacs is not None:
+        if not isinstance(save_dimacs, str):
+            file_number = 0
+            while True:
+                save_dimacs = "lls_dimacs" + str(file_number) + ".cnf"
+                file_number += 1
+                if not os.path.isfile(save_dimacs):
+                    break
+        search_pattern.clauses.make_file(save_dimacs, indent=indent + 1)
 
-    # The solvers prefer their input as a file, so write it out
-    search_pattern.clauses.make_file(dimacs_file, indent=indent + 1)
+    dimacs_string = search_pattern.clauses.make_string(indent=indent + 1)
 
-    print_message('Done\n', 3, indent=indent)
     if not dry_run:
-        solution, time_taken = use_solver(solver, dimacs_file, parameters=parameters, timeout=timeout, indent=indent)
+        solution, time_taken = use_solver(solver, dimacs_string, parameters=parameters, timeout=timeout, indent=indent+1)
     else:
         solution = "DRYRUN\n"
         time_taken = None
 
-    if save_dimacs is None:
-        print_message('Removing DIMACS file...', 3, indent=indent)
-        try:
-            os.remove(dimacs_file)
-        except OSError as e:
-            if e.errno == errno.ENOENT:
-                print_message('DIMACS file "' + dimacs_file + '" not found', 3, indent=indent + 1)
-            else:
-                raise
-        print_message('Done\n', 3, indent=indent)
-    indent -= 1
     if solution not in ["UNSAT\n", "TIMEOUT\n", "DRYRUN\n"]:
         sat = "SAT"
         solution = search_pattern.substitute_solution(
@@ -67,7 +51,7 @@ def sat_solve(search_pattern, solver=None, parameters=None, timeout=None, save_d
     return solution, sat, time_taken
 
 
-def use_solver(solver, file_name, parameters=None, timeout=None, indent=0):
+def use_solver(solver, dimacs_string, parameters=None, timeout=None, indent=0):
     if parameters is not None:
         parameter_list = parameters.strip(" ").split(" ")
     else:
@@ -75,7 +59,7 @@ def use_solver(solver, file_name, parameters=None, timeout=None, indent=0):
 
     solver_path = sys.path[0] + "/solvers/" + solver
 
-    command = [solver_path, file_name] + parameter_list
+    command = [solver_path] + parameter_list
 
     solver_process = subprocess.Popen(
         command,
@@ -94,7 +78,7 @@ def use_solver(solver, file_name, parameters=None, timeout=None, indent=0):
     start_time = time.time()
     try:
         timeout_timer.start()
-        out, error = solver_process.communicate()
+        out, error = solver_process.communicate(dimacs_string.encode())
     except KeyboardInterrupt:
         solver_process.kill()
         timeout_flag[0] = "SIGINT"

@@ -44,7 +44,7 @@ class ClauseList:
         self.clause_set.add(" ".join(dimacs_clause))
 
     def make_file(self, file_name, indent=0):
-         = self.make_sting()
+        output_string = self.make_string()
         print_message('Writing file "' + file_name + '" ...', 3, indent=indent)
         with open(file_name, "w") as output_file:
             output_file.write(output_string)
@@ -52,5 +52,5 @@ class ClauseList:
 
     def make_string(self, indent=0):
         print_message('Writing clauses into DIMACS format ...', 3, indent=indent)
-        return "p cnf " + str(self.number_of_variables) + " " + str(len(self.clause_set)) + "\n" + "".join(self.clause_set))
+        return "p cnf " + str(self.number_of_variables) + " " + str(len(self.clause_set)) + "\n" + "".join(self.clause_set)
         print_message('Done\n', 3, indent=indent)
