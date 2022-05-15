@@ -16,7 +16,11 @@ def sat_solve(search_pattern, solver=None, parameters=None, timeout=None, save_d
     print_message('Solving...', indent=indent)
     indent += 1
     print_message('Preparing SAT solver input...', 3, indent=indent)
-    solvers = [
+
+    if solver is None:
+        solver = src.defaults.solver
+
+    if solver not in [
         "minisat",
         "MapleCOMSPS",
         "MapleCOMSPS_LRB",
@@ -27,25 +31,19 @@ def sat_solve(search_pattern, solver=None, parameters=None, timeout=None, save_d
         "plingeling",
         "treengeling",
         "cadical",
-        "kissat"]
-    try:
-        if solver is None:
-            solver = src.defaults.solver
-        elif int(solver) in range(len(solvers)):
-            solver = solvers[solver]  # Allow solver to be specified by number
-    except ValueError:
-        pass
+        "kissat"
+    ]:
+        raise ValueError
 
-    assert solver in solvers, "Solver not found"
-
-    if isinstance(save_dimacs, str):
-        dimacs_file = save_dimacs
-    else:
-        dimacs_file = "lls_dimacs.cnf"
+    if save_dimacs is None:
         file_number = 0
-        while os.path.isfile(dimacs_file):
-            file_number += 1
+        while True:
             dimacs_file = "lls_dimacs" + str(file_number) + ".cnf"
+            file_number += 1
+            if not os.path.isfile(dimacs_file):
+                break
+    else:
+        dimacs_file = save_dimacs
 
     # The solvers prefer their input as a file, so write it out
     search_pattern.clauses.make_file(dimacs_file, indent=indent + 1)
