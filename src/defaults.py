@@ -6,8 +6,6 @@ solver = "kissat"  # One of the following solvers
 supported_solvers = [
     "kissat",
     "cadical",
-    "glucose",
-    "glucose-syrup",
     "lingeling",
     "plingeling",
     "treengeling"

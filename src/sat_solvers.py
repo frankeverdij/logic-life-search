@@ -75,12 +75,7 @@ def use_solver(solver, file_name, parameters=None, timeout=None, indent=0):
 
     solver_path = sys.path[0] + "/solvers/" + solver
 
-    if solver in ["lingeling", "plingeling", "treengeling", "cadical", "kissat"]:
-        command = [solver_path, file_name] + parameter_list
-    elif solver in ["glucose", "glucose-syrup"]:
-        command = [solver_path, file_name, "-model"] + parameter_list
-    else:
-        assert False, "Solver not recognised"
+    command = [solver_path, file_name] + parameter_list
 
     solver_process = subprocess.Popen(
         command,
@@ -114,21 +109,13 @@ def use_solver(solver, file_name, parameters=None, timeout=None, indent=0):
 
         print_message('Formatting SAT solver output...', 3, indent=indent)
 
-        if solver in ["lingeling", "plingeling", "treengeling", "cadical", "kissat"]:
-            solution = str(out)
-            solution = solution.split("\ns ")
-            solution = solution[1]
-            solution = solution.split("\nc")
-            solution = solution[0]
-            solution = solution.split("\nv ")
-            solution = solution[0] + "\n" + " ".join(solution[1:])
-        elif solver in ["glucose", "glucose-syrup"]:
-            try:
-                solution = out.split("\ns ")[1]
-                solution = re.sub("s ", "", solution)
-                solution = re.sub("v ", "", solution)
-            except IndexError:
-                solution = "UNSAT\n"
+        solution = str(out)
+        solution = solution.split("\ns ")
+        solution = solution[1]
+        solution = solution.split("\nc")
+        solution = solution[0]
+        solution = solution.split("\nv ")
+        solution = solution[0] + "\n" + " ".join(solution[1:])
 
         if "UNSAT" in solution.upper():
             solution = "UNSAT\n"
