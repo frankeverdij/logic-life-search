@@ -95,7 +95,7 @@ def use_solver(solver, dimacs_string, parameters=None, timeout=None, indent=0):
 
         solution = str(out)
         solution = solution.split("\ns ")
-        solution = solution[1]
+        solution = solution[-1]
         solution = solution.split("\nc")
         solution = solution[0]
         solution = solution.split("\nv ")
