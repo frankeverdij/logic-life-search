@@ -179,7 +179,7 @@ lls_dir = os.path.dirname(os.path.realpath(__file__))
 src.logging.verbosity_level = args.verbosity
 
 if args.version:
-    log('Version 3\n', 0, 1)
+    log('Version 4\n', 0, 1)
 pattern_output_format = args.csv
 output_file_name = args.output_file_name
 
