@@ -7,7 +7,7 @@ import re
 import src.search_patterns
 import src.rules
 import src.files
-import src.defaults
+import settings
 import src.literal_manipulation
 import src.logging
 from src.SearchPattern import SearchPattern
@@ -99,7 +99,7 @@ parser.add_argument(
 parser.add_argument(
     '-v', '--verbosity',
     type=int,
-    default=src.defaults.verbosity,
+    default=settings.verbosity,
     help="""Set the verbosity. Options: 0 - No output. Only useful with -o option to save solution to file. 1 - Only display the solution. 2 (Default) - Displays some information about what the program is doing, some statistics, and the solution. 3 - A huge torrent of information."""
 )
 parser.add_argument(
@@ -319,7 +319,7 @@ else:
         background_ignore_transition
     ) = src.search_patterns.search_pattern_from_string(
         src.files.string_from_file(lls_dir +
-                                   "/backgrounds/" + src.defaults.background,
+                                   "/backgrounds/" + settings.background,
                                    )
     )
 

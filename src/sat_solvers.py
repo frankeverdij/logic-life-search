@@ -3,8 +3,7 @@ import subprocess
 import threading
 import sys
 import enum
-import src.files
-import src.defaults
+import settings
 from src.logging import log
 
 class Status(enum.Enum):
@@ -21,7 +20,7 @@ def sat_solve(search_pattern, solver=None, parameters=None, timeout=None):
     log('Solving...', 1)
 
     if solver is None:
-        solver = src.defaults.solver
+        solver = settings.solver
 
     dimacs_string = search_pattern.clauses.make_string()
 

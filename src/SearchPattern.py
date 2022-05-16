@@ -4,7 +4,7 @@ import itertools
 import src.taocp_variable_scheme
 import src.formatting
 import src.rules
-import src.defaults
+import settings
 import src.files
 import src.literal_manipulation
 from src.ClauseList import ClauseList
@@ -37,7 +37,7 @@ class SearchPattern:
                 self.background_ignore_transition
             ) = src.formatting.parse_input_string(
                 src.files.string_from_file(
-                    "backgrounds/" + src.defaults.background,
+                    "backgrounds/" + settings.background,
                 )
             )
         else:
@@ -50,7 +50,7 @@ class SearchPattern:
         self.clauses = ClauseList()
         self.rule = (copy.deepcopy(rule)
                      if (rule is not None)
-                     else src.rules.rule_from_rulestring(src.defaults.rulestring))
+                     else src.rules.rule_from_rulestring(settings.rulestring))
 
         if add_border:
             width = len(self.grid[0][0])
@@ -297,7 +297,7 @@ class SearchPattern:
 
         if method is None:
             if src.rules.rulestring_from_rule(self.rule) == "B3/S23":
-                method = src.defaults.life_encoding_method
+                method = settings.life_encoding_method
             else:
                 method = 2  # Default method
         assert method in range(3), "Method not found"
@@ -765,7 +765,7 @@ class SearchPattern:
 
     def make_string(self, pattern_output_format=None, determined=None, show_background=None):
         if pattern_output_format is None:
-            pattern_output_format = src.defaults.pattern_output_format
+            pattern_output_format = settings.pattern_output_format
 
         log('Formatting output...', 1)
 

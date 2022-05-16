@@ -1,7 +1,6 @@
 import src.files
 import src.formatting
 import src.rules
-import src.defaults
 from src.logging import log
 from src.utilities import make_grid
 from src.literal_manipulation import variable_from_literal, negate

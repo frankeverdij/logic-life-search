@@ -1,8 +1,8 @@
-import src.defaults
+import settings
 from src.utilities import format_carriage_returns
 
 indent_level = 0
-verbosity_level = src.defaults.verbosity
+verbosity_level = settings.verbosity
 
 def log(message='', indent=0, verbosity_threshold=3):
     """Prints an output message (with the specified indent) if the verbosity is sufficiently high"""
