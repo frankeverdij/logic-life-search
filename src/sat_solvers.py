@@ -1,14 +1,11 @@
 import time
 import subprocess
 import threading
-import os
-import errno
 import sys
-import re
 import enum
 import src.files
 import src.defaults
-from src.messages import print_message
+from src.logging import log
 
 class Status(enum.Enum):
     SAT = 'Satisfiable'
@@ -18,29 +15,26 @@ class Status(enum.Enum):
     INTERRUPT = 'Keyboard interrupt'
     ERROR = 'Error'
 
-def sat_solve(search_pattern, solver=None, parameters=None, timeout=None, indent=0):
+def sat_solve(search_pattern, solver=None, parameters=None, timeout=None):
     """Solve the given DIMACS problem, using the specified SAT solver"""
 
-    print_message('Solving...', indent=indent)
+    log('Solving...', 1)
 
     if solver is None:
         solver = src.defaults.solver
 
-    dimacs_string = search_pattern.clauses.make_string(indent=indent + 1)
+    dimacs_string = search_pattern.clauses.make_string()
 
-    status, solution, time_taken = use_solver(solver, dimacs_string, parameters=parameters, timeout=timeout, indent=indent+1)
+    status, solution, time_taken = use_solver(solver, dimacs_string, parameters=parameters, timeout=timeout)
 
     if status == Status.SAT:
-        solution = search_pattern.substitute_solution(
-            solution,
-            indent=indent + 1
-        )
+        solution = search_pattern.substitute_solution(solution)
 
-    print_message('Done\n', indent=indent)
+    log('Done\n', -1)
     return status, solution, time_taken
 
 
-def use_solver(solver, dimacs_string, parameters=None, timeout=None, indent=0):
+def use_solver(solver, dimacs_string, parameters=None, timeout=None):
     parameter_list = parameters.strip(" ").split(" ") if parameters is not None else[]
     solver_path = sys.path[0] + "/solvers/" + solver
     command = [solver_path] + parameter_list
@@ -57,7 +51,7 @@ def use_solver(solver, dimacs_string, parameters=None, timeout=None, indent=0):
 
     timeout_timer = threading.Timer(timeout, kill, [solver_process])
 
-    print_message('Solving with "' + solver + '" ... (Start time: ' + time.ctime() + ")", 3, indent=indent)
+    log('Solving with "' + solver + '" ... (Start time: ' + time.ctime() + ")", 1)
 
     keyboard_interrupt_flag = False
     start_time = time.time()
@@ -70,32 +64,32 @@ def use_solver(solver, dimacs_string, parameters=None, timeout=None, indent=0):
     end_time = time.time()
     timeout_flag = not timeout_timer.is_alive()
     timeout_timer.cancel()
-    print_message('Done\n', 3, indent=indent)
+    log('Done\n', -1)
 
     solution = None
     time_taken = end_time - start_time
-    print_message('Time taken: ' + str(time_taken), 3, indent=indent)
+    log('Time taken: ' + str(time_taken))
 
     if keyboard_interrupt_flag:
         status = Status.INTERRUPT
     elif timeout_flag:
         status = Status.TIMEOUT
     elif error:
-        print_message('Error: "' + error.decode("utf-8") + '"', 3, indent=indent)
+        log('Error: "' + error.decode("utf-8") + '"')
         status = Status.ERROR
     else:
         out = out.decode("utf-8")
-        print_message("SAT solver output:", 3, indent=indent)
-        print_message(out, 3, indent=indent + 1)
-        print_message('Done\n', 3, indent=indent)
-        print_message('Parsing SAT solver output...', 3, indent=indent)
-        status, solution = format_dimacs_output(out, indent=indent)
-        print_message('Done', 3, indent=indent)
+        log("SAT solver output:", 1)
+        log(out)
+        log('Done\n', -1)
+        log('Parsing SAT solver output...', 1)
+        status, solution = format_dimacs_output(out)
+        log('Done\n', -1)
 
     return status, solution, time_taken
 
 
-def format_dimacs_output(dimacs_output, indent=0):
+def format_dimacs_output(dimacs_output):
 
     lines = dimacs_output.strip('\n').split('\n')
 

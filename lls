@@ -9,10 +9,10 @@ import src.rules
 import src.files
 import src.defaults
 import src.literal_manipulation
-import src.formatting
+import src.logging
 from src.SearchPattern import SearchPattern
 from src.literal_manipulation import negate, variable_from_literal
-from src.messages import print_message
+from src.logging import log
 from src.sat_solvers import Status, sat_solve
 from src.UnsatInPreprocessing import UnsatInPreprocessing
 
@@ -183,17 +183,14 @@ args = parser.parse_args()
 
 lls_dir = os.path.dirname(os.path.realpath(__file__))
 
-indent = 0
-src.defaults.verbosity = args.verbosity
-
-print_message('', indent=indent)
+src.logging.verbosity_level = args.verbosity
 
 if args.version:
-    print_message('Version 2\n', 1, indent=indent)
+    log('Version 2\n', 0, 1)
 pattern_output_format = args.csv
 output_file_name = args.output_file_name
 
-print_message('Getting search pattern...', indent=indent)
+log('Getting search pattern...', 1, 2)
 
 
 
@@ -294,7 +291,7 @@ for symmetry_list, argument_list in [(symmetries, args.symmetry), (asymmetries, 
 solutions_remaining = 0 if args.dry_run else args.number_of_solutions
 
 ignore_transition = None  # Default value
-rule = src.rules.rule_from_rulestring(args.rule, indent=indent + 1)
+rule = src.rules.rule_from_rulestring(args.rule)
 
 # Add "user_input_" to user's variable names, to prevent collisions"
 if args.rule is not None and args.rule.strip()[0] == "{":
@@ -306,25 +303,16 @@ if args.rule is not None and args.rule.strip()[0] == "{":
 
 if args.background:
     # Check current directory and then backgrounds/
-    print_message('Creating background from file "' + args.background[0] + '" ...', 3, indent=indent + 1)
+    log('Creating background from file "' + args.background[0] + '" ...', 1)
     if os.path.isfile(args.background[0]):
-        input_string = src.files.string_from_file(
-            args.background[0],
-            indent=indent + 2
-        )
+        input_string = src.files.string_from_file(args.background[0])
     elif os.path.isfile(lls_dir +
                         "/backgrounds/" + args.background[0]):
-        input_string = src.files.string_from_file(lls_dir +
-                                                  "/backgrounds/" + args.background[0],
-                                                  indent=indent + 2
-                                                  )
+        input_string = src.files.string_from_file(lls_dir + "/backgrounds/" + args.background[0])
     else:
         assert False, "Search pattern file not found"
-    background_grid, background_ignore_transition = src.search_patterns.search_pattern_from_string(
-        input_string,
-        indent=indent + 2
-    )
-    print_message('Done\n', 3, indent=indent + 1)
+    background_grid, background_ignore_transition = src.search_patterns.search_pattern_from_string(input_string)
+    log('Done\n', -1)
 else:
     (
         background_grid,
@@ -346,24 +334,15 @@ if args.input_file_name and args.blank_search_pattern:
 
 if args.input_file_name:
     # Check current directory and then search_pattern/
-    print_message('Creating search pattern from file "' + args.input_file_name + '" ...', 3, indent=indent + 1)
+    log('Creating search pattern from file "' + args.input_file_name + '" ...', 1)
     if os.path.isfile(args.input_file_name):
-        input_string = src.files.string_from_file(
-            args.input_file_name,
-            indent=indent + 2
-        )
+        input_string = src.files.string_from_file(args.input_file_name)
     elif os.path.isfile(lls_dir + "/search_patterns/" + args.input_file_name):
-        input_string = src.files.string_from_file(
-            lls_dir + "/search_patterns/" + args.input_file_name,
-            indent=indent + 2
-        )
+        input_string = src.files.string_from_file(lls_dir + "/search_patterns/" + args.input_file_name)
     else:
         assert False, "Search pattern file not found"
-    grid, ignore_transition = src.search_patterns.search_pattern_from_string(
-        input_string,
-        indent=indent + 2
-    )
-    print_message('Done\n', 3, indent=indent + 1)
+    grid, ignore_transition = src.search_patterns.search_pattern_from_string(input_string)
+    log('Done\n', -1)
 
 elif args.blank_search_pattern:
     assert len(args.blank_search_pattern) in range(1, 4), "Wrong number of arguments for bounding box"
@@ -381,12 +360,12 @@ elif args.blank_search_pattern:
         duration = args.blank_search_pattern[2]
     else:
         raise Exception("Wrong number of arguments for bounding box")
-    grid = src.search_patterns.blank_search_pattern(width, height, duration, indent=indent + 1)
+    grid = src.search_patterns.blank_search_pattern(width, height, duration)
 else:
-    print_message('\nNo pattern specified, getting from STDIN... (End with EOF character)\n', 2, indent=indent + 1)
+    log('\nNo pattern specified, getting from STDIN... (End with EOF character)\n', 0, 2)
     input_string = sys.stdin.read()
-    print_message('\n', 1, indent=indent + 1)
-    grid, ignore_transition = src.search_patterns.search_pattern_from_string(input_string, indent=indent + 1)
+    log('\n', 0, 2)
+    grid, ignore_transition = src.search_patterns.search_pattern_from_string(input_string)
 
 # Create the search pattern
 search_pattern = SearchPattern(
@@ -397,77 +376,77 @@ search_pattern = SearchPattern(
     rule=rule
 )
 
-print_message('Done\n', indent=indent)
-print_message('Preprocessing...', indent=indent)
+log('Done\n', -1, 2)
+log('Preprocessing...', 1, 2)
 
 try:
     # Constraints that change the grid
-    search_pattern.standardise_variables_names(indent=indent + 1)
+    search_pattern.standardise_variables_names()
     for symmetry in symmetries:
         search_pattern.force_symmetry(symmetry)
 
-    search_pattern.remove_redundancies(indent=indent + 1)
-    search_pattern.standardise_variables_names(indent=indent + 1)
+    search_pattern.remove_redundancies()
+    search_pattern.standardise_variables_names()
 except UnsatInPreprocessing:
-    print_message("Unsatisfiability proved in preprocessing", indent=indent + 1)
-    print_message('Done\n', indent=indent)
+    log("Unsatisfiability proved in preprocessing", 0, 2)
+    log('Done\n', -1, 2)
     sys.exit()
 
-print_message("Search grid:\n", 3, indent=indent + 1)
-print_message(search_pattern.make_string(pattern_output_format="csv", show_background=True), 3, indent=indent + 2)
+log("Search grid:\n",1)
+log(search_pattern.make_string(pattern_output_format="csv", show_background=True))
+log('Done\n', -1)
 
 # Constraints that are enforced by clauses
 for asymmetry in asymmetries:
     search_pattern.force_asymmetry(asymmetry)
 for constraint in population_at_most:
-    search_pattern.force_population_at_most(constraint, indent=indent + 1)
+    search_pattern.force_population_at_most(constraint)
 for constraint in population_at_least:
-    search_pattern.force_population_at_least(constraint, indent=indent + 1)
+    search_pattern.force_population_at_least(constraint)
 for constraint in population_exactly:
-    search_pattern.force_population_exactly(constraint, indent=indent + 1)
+    search_pattern.force_population_exactly(constraint)
 if args.max_change is not None:
-    search_pattern.force_max_change(args.max_change, indent=indent + 1)
+    search_pattern.force_max_change(args.max_change)
 if args.max_decay is not None:
-    search_pattern.force_max_decay(args.max_decay, indent=indent + 1)
+    search_pattern.force_max_decay(args.max_decay)
 if args.max_growth is not None:
-    search_pattern.force_max_growth(args.max_growth, indent=indent + 1)
+    search_pattern.force_max_growth(args.max_growth)
 for times in force_change:
-    search_pattern.force_change(times, indent=indent + 1)
+    search_pattern.force_change(times)
 
 # The most important bit. Enforces the evolution rules
-search_pattern.force_evolution(method=args.method, indent=indent + 1)
+search_pattern.force_evolution(method=args.method)
 
-print_message('Done\n', indent=indent)
+log('Done\n', -1, 2)
 save_state=args.save_state
 if save_state:
     if isinstance(save_state, str):
         state_file = save_state
     else:
         state_file = src.files.find_free_file_name("lls_state", ".pkl")
-    print_message("Saving state...", 3, indent=indent + 1)
+    log("Saving state...", 1)
     src.files.file_from_object(
         state_file,
         (search_pattern.grid, search_pattern.ignore_transition, search_pattern.background_grid,
          search_pattern.background_ignore_transition, search_pattern.rule,
-         search_pattern.clauses.DIMACS_literal_from_variable),
-        indent=indent + 2
+         search_pattern.clauses.DIMACS_literal_from_variable)
     )
-    print_message("Done\n", 3, indent=indent + 1)
+    log("Done\n", -1)
 # Problem statistics
-print_message('Width: ' + str(len(search_pattern.grid[0][0])), indent=indent)
-print_message('Height: ' + str(len(search_pattern.grid[0])), indent=indent)
-print_message('Duration: ' + str(len(search_pattern.grid)) + "\n", indent=indent)
-print_message('Number of undetermined cells: ' + str(search_pattern.number_of_cells()), indent=indent)
-print_message('Number of variables: ' + str(search_pattern.clauses.number_of_variables), indent=indent)
-print_message('Number of clauses: ' + str(len(search_pattern.clauses.clause_set)) + "\n", indent=indent)
+log('Width: ' + str(len(search_pattern.grid[0][0])), 0, 2)
+log('Height: ' + str(len(search_pattern.grid[0])), 0, 2)
+log('Duration: ' + str(len(search_pattern.grid)) + "\n", 0, 2)
+log('Number of undetermined cells: ' + str(search_pattern.number_of_cells()), 0, 2)
+log('Number of variables: ' + str(search_pattern.clauses.number_of_variables), 0, 2)
+log('Number of clauses: ' + str(len(search_pattern.clauses.clause_set)) + "\n", 0, 2)
 
 save_dimacs=args.save_dimacs
 if save_dimacs is not None:
     if not isinstance(save_dimacs, str):
         save_dimacs = src.files.find_free_file_name("lls_dimacs", ".cnf")
-    search_pattern.clauses.make_file(save_dimacs, indent=indent + 1)
+    search_pattern.clauses.make_file(save_dimacs)
 
-determined = search_pattern.deterministic(indent=indent)
+determined = search_pattern.deterministic()
 show_background = search_pattern.background_nontrivial()
 
 time_taken = 0
@@ -480,24 +459,26 @@ while solutions_remaining > 0:
         search_pattern,
         solver=args.solver,
         parameters=args.parameters,
-        timeout=args.timeout,
-        indent=indent
+        timeout=args.timeout
     )
     time_taken += extra_time_taken
     if status == Status.SAT:
         solutions_remaining -= 1
-        output_string = solution.make_string(pattern_output_format=pattern_output_format, determined=determined,
-                                             show_background=show_background, indent=indent)
+        output_string = solution.make_string(
+            pattern_output_format=pattern_output_format,
+            determined=determined,
+            show_background=show_background
+        )
     else:
         output_string = status.value
-    print_message(output_string + "\n", 1, indent=indent)
+    log(output_string + "\n", 0, 1)
     if output_file_name:
-        print_message('Writing output file...', indent=indent)
-        src.files.append_to_file_from_string(output_file_name, output_string, indent=indent + 1)
-        print_message('Done\n', indent=indent)
+        log('Writing output file...', 1, 2)
+        src.files.append_to_file_from_string(output_file_name, output_string)
+        log('Done\n', -1, 2)
     if status == Status.SAT and solutions_remaining > 0:
         search_pattern.force_distinct(solution, determined=determined)
     else:
         break
 
-print_message('Total solver time: ' + str(time_taken), indent=indent)
+log('Total solver time: ' + str(time_taken), 0, 2)

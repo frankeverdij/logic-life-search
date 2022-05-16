@@ -1,47 +1,47 @@
 import pickle
 import os
-from src.messages import print_message
+from src.logging import log
 
 
-def string_from_file(file_name, indent=0):
+def string_from_file(file_name):
     """Read file into string"""
-    print_message('Reading file "' + file_name + '" ...', 3, indent=indent)
+    log('Reading file "' + file_name + '" ...', 1)
     with open(file_name, "r") as pattern_file:
         input_string = pattern_file.read()
-    print_message('Done\n', 3, indent=indent)
+    log('Done\n', -1)
     return input_string
 
 
-def file_from_string(file_name, input_string, indent=0):
+def file_from_string(file_name, input_string):
     """Write string to file"""
-    print_message('Writing file "' + file_name + '" ...', 3, indent=indent)
+    log('Writing file "' + file_name + '" ...', 1)
     with open(file_name, "w") as output_file:
         output_file.write(input_string)
-    print_message('Done\n', 3, indent=indent)
+    log('Done\n', -1)
 
 
-def append_to_file_from_string(file_name, input_string, indent=0):
+def append_to_file_from_string(file_name, input_string):
     """Append string to file"""
-    print_message('Writing to file "' + file_name + '" ...', 3, indent=indent)
+    log('Writing to file "' + file_name + '" ...', 1)
     with open(file_name, "a+") as output_file:
         output_file.write(input_string)
-    print_message('Done\n', 3, indent=indent)
+    log('Done\n', -1)
 
 
-def file_from_object(file_name, input_object, indent=0):
+def file_from_object(file_name, input_object):
     """Write object to file"""
-    print_message('Writing file "' + file_name + '" ...', 3, indent=indent)
+    log('Writing file "' + file_name + '" ...', 1)
     with open(file_name, "wb") as output_file:
         pickle.dump(input_object, output_file)
-    print_message('Done\n', 3, indent=indent)
+    log('Done\n', -1)
 
 
-def object_from_file(file_name, indent=0):
+def object_from_file(file_name):
     """Load object from file"""
-    print_message('Reading file "' + file_name + '" ...', 3, indent=indent)
+    log('Reading file "' + file_name + '" ...', 1)
     with open(file_name, "rb") as object_file:
         input_object = pickle.load(object_file)
-    print_message('Done\n', 3, indent=indent)
+    log('Done\n', -1)
     return input_object
 
 def find_free_file_name(prefix, suffix):
