@@ -1,4 +1,5 @@
 import pickle
+import os
 from src.messages import print_message
 
 
@@ -42,3 +43,13 @@ def object_from_file(file_name, indent=0):
         input_object = pickle.load(object_file)
     print_message('Done\n', 3, indent=indent)
     return input_object
+
+def find_free_file_name(prefix, suffix):
+    file_number = 0
+    while True:
+        file_name = prefix + str(file_number) + suffix
+        if not os.path.isfile(file_name):
+            break
+        file_number += 1
+    return file_name
+
