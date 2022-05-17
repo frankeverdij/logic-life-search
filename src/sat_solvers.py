@@ -4,6 +4,7 @@ import threading
 import sys
 import enum
 import settings
+import src.formatting
 from src.logging import log
 
 class Status(enum.Enum):
@@ -22,12 +23,9 @@ def sat_solve(search_pattern, solver=None, parameters=None, timeout=None):
     if solver is None:
         solver = settings.solver
 
-    dimacs_string = search_pattern.clauses.make_string()
+    dimacs_string = src.formatting.clauses_to_dimacs(search_pattern.clauses, search_pattern.number_of_variables)
 
     status, solution, time_taken = use_solver(solver, dimacs_string, parameters=parameters, timeout=timeout)
-
-    if status == Status.SAT:
-        solution = search_pattern.substitute_solution(solution)
 
     log('Done\n', -1)
     return status, solution, time_taken
@@ -100,5 +98,5 @@ def format_dimacs_output(dimacs_output):
     if statuses[0] == 'UNSATISFIABLE':
         return Status.UNSAT, None
     elif statuses[0] == 'SATISFIABLE':
-        solution = set(literal for line in variable_lines for literal in line.split() if literal != '0')
+        solution = set(int(literal) for line in variable_lines for literal in line.split() if literal != '0')
         return Status.SAT, solution

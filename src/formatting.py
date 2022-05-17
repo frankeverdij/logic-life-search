@@ -60,9 +60,8 @@ def parse_input_string(input_string):
     return grid, ignore_transition
 
 
-def make_rle(grid, background_grid=None, rule=None, determined=None, show_background=None):
+def make_rle(grid, solution, background_grid=None, rule=None, determined=None, show_background=None):
     """Turn a search pattern into nicely formatted string form"""
-
     log('Format: RLE')
 
     grid = copy.deepcopy(grid)
@@ -73,15 +72,16 @@ def make_rle(grid, background_grid=None, rule=None, determined=None, show_backgr
     for t, generation in enumerate(grid):
         for y, row in enumerate(generation):
             for x, cell in enumerate(row):
-                assert cell in ["0", "1"], "Cell not equal to 0 or 1 in RLE format"
-                if cell == "0":
+                if cell in solution:
                     grid[t][y][x] = "b"
-                elif cell == "1":
+                else:
                     grid[t][y][x] = "o"
 
     rle_string = "x = " + str(width) + ", y = " + str(height)
 
     if rule is not None:
+        for transition in rule:
+            rule[transition] = 1 if rule[transition] in solution else -1
         rle_string += ", rule = " + rulestring_from_rule(rule)
 
     rle_string += "\n"
@@ -101,10 +101,9 @@ def make_rle(grid, background_grid=None, rule=None, determined=None, show_backgr
         for t, generation in enumerate(background_grid):
             for y, row in enumerate(generation):
                 for x, cell in enumerate(row):
-                    assert cell in ["0", "1"], "Cell not equal to 0 or 1 in RLE format"
-                    if cell == "0":
+                    if cell in solution:
                         background_grid[t][y][x] = "b"
-                    elif cell == "1":
+                    else:
                         background_grid[t][y][x] = "o"
 
         rle_string += "\n\n".join(
@@ -149,7 +148,7 @@ def make_csv(
 
 
 def space_evenly(grid, ignore_transition=None):
-    grid = copy.deepcopy(grid)
+    grid = [[[str(cell) for cell in row] for row in generation] for generation in grid]
     if ignore_transition is None:
         ignore_transition = make_grid(False, template=grid)
 
@@ -176,3 +175,9 @@ def space_evenly(grid, ignore_transition=None):
                     grid[t][y][x] += "'"
 
     return grid
+
+def clauses_to_dimacs(clauses, number_of_variables):
+    log('Writing clauses into DIMACS format ...', 1)
+    dimacs = f"p cnf {number_of_variables} {len(clauses)}\n" + "".join(' '.join(str(literal) for literal in clause) + ' 0\n' for clause in clauses)
+    log('Done\n', -1)
+    return dimacs

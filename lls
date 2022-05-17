@@ -4,17 +4,16 @@ import argparse
 import sys
 import os
 import re
-import src.search_patterns
-import src.rules
 import src.files
 import settings
 import src.literal_manipulation
 import src.logging
+import src.formatting
 from src.SearchPattern import SearchPattern
-from src.literal_manipulation import negate, variable_from_literal
 from src.logging import log
 from src.sat_solvers import Status, sat_solve
 from src.UnsatInPreprocessing import UnsatInPreprocessing
+from src.utilities import make_grid
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -138,7 +137,7 @@ parser.add_argument(
 parser.add_argument(
     "-r", '--rule',
     type=str,
-    default=None,
+    default=settings.rulestring,
     help="""Which rule to use. Rules can also be specified as partial rules, by adding a "p" to the front. For example "pB3a-c/S23" allows any of the transitions from Life, except 3a must be present and 3c must not. Can also specify rule as a Python dictionary, like so: {'S4e': '0', 'S4a': '0', 'S4c': '0', 'S4n': '0', 'S4i': '0', 'S4j': '0', 'S4k': '0', 'S4t': '0', 'S4w': '0', 'S4q': '0', 'S4r': '0', 'S4y': '0', 'S4z': '0', 'B2n': '0', 'B2k': '0', 'B2i': '0', 'B2e': '0', 'B2c': '0', 'B2a': '0', 'S5e': '0', 'S5c': '0', 'S5a': '0', 'S5n': '0', 'S5k': '0', 'S5j': '0', 'S5i': '0', 'S5r': '0', 'S5q': '0', 'S5y': '0', 'B5y': '0', 'B5r': '0', 'B5q': '0', 'B5j': '0', 'B5k': '0', 'B5i': '0', 'B5n': '0', 'B5c': '0', 'B5a': '0', 'B5e': '0', 'S6n': '0', 'B0c': '0', 'S6k': '0', 'S6i': '0', 'S6e': '0', 'S6c': '0', 'S6a': '0', 'B8c': '0', 'S7c': '0', 'S7e': '0', 'B3y': 'r_7', 'B3q': 'r_5', 'B3r': 'r_6', 'B3n': 'r_4', 'B3i': 'r_1', 'B3j': 'r_2', 'B3k': 'r_3', 'B3e': 'r_0', 'B3a': '1', 'B3c': '0', 'S8c': '0', 'B6c': '0', 'B6a': '0', 'B6e': '0', 'B6k': '0', 'B6i': '0', 'S0c': '0', 'B6n': '0', 'B1e': '0', 'B1c': '0', 'S1c': '0', 'S1e': '0', 'S2c': 'r_9', 'S2a': 'r_8', 'S2e': 'r_10', 'S2k': 'r_12', 'S2i': 'r_11', 'S2n': 'r_13', 'B4t': '0', 'B4w': '0', 'B4q': '0', 'B4r': '0', 'B4y': '0', 'B4z': '0', 'B4e': '0', 'S3n': 'r_20', 'B4a': '0', 'B4c': '0', 'B4n': '0', 'B4i': '0', 'B4k': '0', 'B4j': '0', 'S3y': 'r_23', 'S3q': 'r_21', 'S3r': 'r_22', 'B7c': '0', 'S3i': 'r_17', 'B7e': '0', 'S3k': 'r_19', 'S3j': 'r_18', 'S3e': 'r_16', 'S3a': 'r_14', 'S3c': 'r_15'}"""
 )
 parser.add_argument(
@@ -181,12 +180,8 @@ src.logging.verbosity_level = args.verbosity
 if args.version:
     log('4', 0, 1)
     sys.exit()
-pattern_output_format = args.csv
-output_file_name = args.output_file_name
 
 log('Getting search pattern...', 1, 2)
-
-
 
 force_change = []
 for generations in args.force_change:
@@ -285,15 +280,6 @@ for symmetry_list, argument_list in [(symmetries, args.symmetry), (asymmetries, 
 solutions_remaining = 0 if args.dry_run else args.number_of_solutions
 
 ignore_transition = None  # Default value
-rule = src.rules.rule_from_rulestring(args.rule)
-
-# Add "user_input_" to user's variable names, to prevent collisions"
-if args.rule is not None and args.rule.strip()[0] == "{":
-    for transition, literal in rule.items():
-        if literal not in ["0", "1"]:
-            variable, negated = variable_from_literal(literal)
-            literal = negate("user_input_" + variable, negated)
-            rule[transition] = literal
 
 if args.background:
     # Check current directory and then backgrounds/
@@ -305,13 +291,13 @@ if args.background:
         input_string = src.files.string_from_file(lls_dir + "/backgrounds/" + args.background[0])
     else:
         assert False, "Search pattern file not found"
-    background_grid, background_ignore_transition = src.search_patterns.search_pattern_from_string(input_string)
+    background_grid, background_ignore_transition = src.formatting.parse_input_string(input_string)
     log('Done\n', -1)
 else:
     (
         background_grid,
         background_ignore_transition
-    ) = src.search_patterns.search_pattern_from_string(
+    ) = src.formatting.parse_input_string(
         src.files.string_from_file(lls_dir +
                                    "/backgrounds/" + settings.background,
                                    )
@@ -320,7 +306,6 @@ else:
 if args.background_offset:
     src.literal_manipulation.offset_background(background_grid, *args.background_offset)
     src.literal_manipulation.offset_background(background_ignore_transition, *args.background_offset)
-
 
 
 if args.input_file_name and args.blank_search_pattern:
@@ -335,7 +320,7 @@ if args.input_file_name:
         input_string = src.files.string_from_file(lls_dir + "/search_patterns/" + args.input_file_name)
     else:
         assert False, "Search pattern file not found"
-    grid, ignore_transition = src.search_patterns.search_pattern_from_string(input_string)
+    grid, ignore_transition = src.formatting.parse_input_string(input_string)
     log('Done\n', -1)
 
 elif args.blank_search_pattern:
@@ -354,12 +339,17 @@ elif args.blank_search_pattern:
         duration = args.blank_search_pattern[2]
     else:
         raise Exception("Wrong number of arguments for bounding box")
-    grid = src.search_patterns.blank_search_pattern(width, height, duration)
+    log('Creating blank search pattern...', 1)
+
+    grid = make_grid('*', width, height, duration)
+
+    log("Pattern created:\n" + src.formatting.make_csv(grid) + "\n")
+    log('Done\n', -1)
 else:
     log('\nNo pattern specified, getting from STDIN... (End with EOF character)\n', 0, 2)
     input_string = sys.stdin.read()
     log('\n', 0, 2)
-    grid, ignore_transition = src.search_patterns.search_pattern_from_string(input_string)
+    grid, ignore_transition = src.formatting.parse_input_string(input_string)
 
 # Create the search pattern
 search_pattern = SearchPattern(
@@ -367,7 +357,7 @@ search_pattern = SearchPattern(
     ignore_transition=ignore_transition,
     background_grid=background_grid,
     background_ignore_transition=background_ignore_transition,
-    rule=rule
+    rulestring=args.rule.strip()
 )
 
 log('Done\n', -1, 2)
@@ -375,12 +365,10 @@ log('Preprocessing...', 1, 2)
 
 try:
     # Constraints that change the grid
-    search_pattern.standardise_variables_names()
     for symmetry in symmetries:
         search_pattern.force_symmetry(symmetry)
 
     search_pattern.remove_redundancies()
-    search_pattern.standardise_variables_names()
 except UnsatInPreprocessing:
     log("Unsatisfiability proved in preprocessing", 0, 2)
     log('Done\n', -1, 2)
@@ -431,8 +419,8 @@ log('Width: ' + str(len(search_pattern.grid[0][0])), 0, 2)
 log('Height: ' + str(len(search_pattern.grid[0])), 0, 2)
 log('Duration: ' + str(len(search_pattern.grid)) + "\n", 0, 2)
 log('Number of undetermined cells: ' + str(search_pattern.number_of_cells()), 0, 2)
-log('Number of variables: ' + str(search_pattern.clauses.number_of_variables), 0, 2)
-log('Number of clauses: ' + str(len(search_pattern.clauses.clause_set)) + "\n", 0, 2)
+log('Number of variables: ' + str(search_pattern.number_of_variables), 0, 2)
+log('Number of clauses: ' + str(len(search_pattern.clauses)) + "\n", 0, 2)
 
 save_dimacs=args.save_dimacs
 if save_dimacs is not None:
@@ -458,17 +446,20 @@ while solutions_remaining > 0:
     time_taken += extra_time_taken
     if status == Status.SAT:
         solutions_remaining -= 1
-        output_string = solution.make_string(
-            pattern_output_format=pattern_output_format,
+        output_string = src.formatting.make_rle(
+            search_pattern.grid,
+            solution,
+            background_grid=search_pattern.background_grid,
+            rule=search_pattern.rule,
             determined=determined,
             show_background=show_background
         )
     else:
         output_string = status.value
     log(output_string + "\n", 0, 1)
-    if output_file_name:
+    if args.output_file_name:
         log('Writing output file...', 1, 2)
-        src.files.append_to_file_from_string(output_file_name, output_string)
+        src.files.append_to_file_from_string(args.output_file_name, output_string)
         log('Done\n', -1, 2)
     if status == Status.SAT and solutions_remaining > 0:
         search_pattern.force_distinct(solution, determined=determined)

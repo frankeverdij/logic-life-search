@@ -1,42 +1,26 @@
 import re
 
-
-def negate(literal, flag=True, dimacs=False):
-    """The negation of the given literal"""
-
-    if flag:
-        if literal == "0":
-            negation = "1"
-        elif literal == "1" and not dimacs:
-            negation = "0"
-        elif literal[0] == "-":
-            negation = literal[1:]
-        else:
-            negation = "-" + literal
-    else:
-        negation = literal
-
-    return negation
-
-
 def variable_from_literal(literal):
     """Breaks down a literal into a variable and a flag for negation"""
 
-    if literal[0] == "-":
-        variable = literal[1:]
-        negated = True
+    if isinstance(literal,str):
+        if literal[0] == '-':
+            return literal[1:], -1
+        else:
+            return literal, 1
+    elif isinstance(literal,int):
+        variable = abs(literal)
+        sign = literal//variable
+        return variable, sign
     else:
-        variable = literal
-        negated = False
-
-    return variable, negated
+        raise ValueError
 
 
 def implies(antecedents, consequent):
     """Creates a clause saying that the antecedent literals imply the consequent"""
-    if isinstance(antecedents, str):
+    if isinstance(antecedents, int):
         antecedents = [antecedents]
-    return [negate(antecedent) for antecedent in antecedents] + [consequent]
+    return [-antecedent for antecedent in antecedents] + [consequent]
 
 
 def neighbours_from_coordinates(grid, x, y, t, t_offset=-1, background_grid=None):
