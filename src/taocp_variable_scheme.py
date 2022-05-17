@@ -2,6 +2,7 @@ from src.literal_manipulation import implies
 
 defined_literals = dict()
 
+
 def children(letter, x, y):
     """Gives the indices of the "children" of the variables describing the neighbours of a cell, according to the scheme described by Knuth"""
     assert letter in ["a", "b", "c", "d", "e", "f", "g"], "Letter does not have children in Knuth's scheme"

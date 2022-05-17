@@ -87,9 +87,11 @@ class SearchPattern:
         self.cardinality_variables = dict()
         self.defined_cardinality_variables = set()
 
-    def prepare_variables(self,grid, background_grid, rulestring):
+    def prepare_variables(self, grid, background_grid, rulestring):
         variable_dict = dict()
-        rule, self.number_of_variables, variable_dict = src.rules.rule_from_rulestring(rulestring, self.number_of_variables, variable_dict)
+        rule, self.number_of_variables, variable_dict = src.rules.rule_from_rulestring(rulestring,
+                                                                                       self.number_of_variables,
+                                                                                       variable_dict)
 
         new_grid = make_grid(None, template=grid)
 
@@ -111,7 +113,7 @@ class SearchPattern:
                                 self.number_of_variables += 1
                                 variable_dict[variable_string] = self.number_of_variables
                             variable = variable_dict[variable_string]
-                    new_grid[t][y][x] = variable*sign
+                    new_grid[t][y][x] = variable * sign
 
         new_background_grid = make_grid(None, template=background_grid)
 
@@ -133,14 +135,13 @@ class SearchPattern:
                                 self.number_of_variables += 1
                                 variable_dict[variable_string] = self.number_of_variables
                             variable = variable_dict[variable_string]
-                    new_background_grid[t][y][x] = variable*sign
+                    new_background_grid[t][y][x] = variable * sign
 
         return new_grid, new_background_grid, rule
 
-
     def number_of_cells(self):
         return len(set(abs(cell) for generation in self.grid for row in generation for cell in row if
-                       cell not in [1,-1]))
+                       cell not in [1, -1]))
 
     def remove_redundancies(self):
         log("Removing redundant transitions...", 1)
@@ -160,11 +161,11 @@ class SearchPattern:
                             self.background_grid[t][y][x] = parents_dict[parents_string]
                             to_force_equal.append((parents_dict[parents_string], cell))
                             self.background_ignore_transition[t][y][x] = True
-                        elif all(parent in [-1,1] for parent in parents):
-                            bs_letter = ["B", "S"][[-1,1].index(predecessor_cell)]
+                        elif all(parent in [-1, 1] for parent in parents):
+                            bs_letter = ["B", "S"][[-1, 1].index(predecessor_cell)]
                             transition = src.rules.transition_from_cells(neighbours)
                             child = self.rule[bs_letter + transition]
-                            if cell not in [-1,1]:
+                            if cell not in [-1, 1]:
                                 self.background_grid[t][y][x] = child
                             to_force_equal.append((cell, child))
                             self.background_ignore_transition[t][y][x] = True
@@ -188,11 +189,11 @@ class SearchPattern:
                                 self.grid[t][y][x] = parents_dict[parents_string]
                                 to_force_equal.append((parents_dict[parents_string], cell))
                                 self.ignore_transition[t][y][x] = True
-                            elif all(parent in [-1,1] for parent in parents):
-                                bs_letter = ["B", "S"][[-1,1].index(predecessor_cell)]
+                            elif all(parent in [-1, 1] for parent in parents):
+                                bs_letter = ["B", "S"][[-1, 1].index(predecessor_cell)]
                                 transition = src.rules.transition_from_cells(neighbours)
                                 child = self.rule[bs_letter + transition]
-                                if cell not in [-1,1]:
+                                if cell not in [-1, 1]:
                                     self.grid[t][y][x] = child
                                 to_force_equal.append((cell, child))
                                 self.ignore_transition[t][y][x] = True
@@ -269,11 +270,11 @@ class SearchPattern:
                     transition_literal = self.rule[p + transition]
 
                     self.clauses.append(implies(
-                        [transition_literal] + [predecessor_cell*predecessor_cell_alive] +
-                        [neighbours[i]*neighbours_alive[i] for i in range(8)], cell))
+                        [transition_literal] + [predecessor_cell * predecessor_cell_alive] +
+                        [neighbours[i] * neighbours_alive[i] for i in range(8)], cell))
                     self.clauses.append(implies(
-                        [-transition_literal] + [predecessor_cell*predecessor_cell_alive] +
-                        [neighbours[i]*neighbours_alive[i] for i in range(8)], -cell))
+                        [-transition_literal] + [predecessor_cell * predecessor_cell_alive] +
+                        [neighbours[i] * neighbours_alive[i] for i in range(8)], -cell))
 
     def force_evolution(self, method=None):
         """Adds clauses that force the search pattern to obey the transition rule"""
@@ -502,8 +503,8 @@ class SearchPattern:
                 lambda x, y: (y - y_translate, x - x_translate)
             ),
             "RE|": (
-               lambda x, y: ((width - 1) - x + x_translate, y + y_translate),
-               lambda x, y: ((width - 1) - (x - x_translate), y - y_translate)
+                lambda x, y: ((width - 1) - x + x_translate, y + y_translate),
+                lambda x, y: ((width - 1) - (x - x_translate), y - y_translate)
             ),
             "RE/": (
                 lambda x, y: ((height - 1) - y + x_translate, (height - 1) - x + y_translate),
@@ -631,7 +632,7 @@ class SearchPattern:
                     self.clauses.append(implies([self.grid[t][y][x], -self.grid[0][y][x]], literal))
                     literals.append(literal)
             log("Generation " + str(t))
-            self.force_at_most(literals, max_growth )
+            self.force_at_most(literals, max_growth)
         log("Done\n", -1)
 
     def force_equal(self, cell_pair_list):
@@ -643,13 +644,13 @@ class SearchPattern:
             while cell_0 not in [-1, 1]:
                 variable_0, negated_0 = variable_from_literal(cell_0)
                 if variable_0 in replacement:
-                    cell_0 = replacement[variable_0]*negated_0
+                    cell_0 = replacement[variable_0] * negated_0
                 else:
                     break
             while cell_1 not in [-1, 1]:
                 variable_1, negated_1 = variable_from_literal(cell_1)
                 if variable_1 in replacement:
-                    cell_1 = replacement[variable_1]*negated_1
+                    cell_1 = replacement[variable_1] * negated_1
                 else:
                     break
             if cell_0 != cell_1:
@@ -659,7 +660,7 @@ class SearchPattern:
                     cell_0, cell_1 = cell_1, cell_0
 
                 variable_0, negated_0 = variable_from_literal(cell_0)
-                cell_0, cell_1 = variable_0, cell_1*negated_0
+                cell_0, cell_1 = variable_0, cell_1 * negated_0
 
                 if cell_1 not in [-1, 1]:
                     variable_1, negated_1 = variable_from_literal(cell_1)
@@ -669,7 +670,7 @@ class SearchPattern:
                 if variable_0 in replaces:
                     for variable in replaces[variable_0]:
                         replacement_variable, replacement_negated = variable_from_literal(replacement[variable])
-                        replacement[variable] = cell_1*replacement_negated
+                        replacement[variable] = cell_1 * replacement_negated
                         if cell_1 not in [-1, 1]:
                             replaces[variable_1].append(variable)
                     del replaces[variable_0]
@@ -685,7 +686,7 @@ class SearchPattern:
                         variable, negated = variable_from_literal(cell)
                         if variable in replacement:
                             if replacement[variable] != variable:
-                                self.grid[t][y][x] = replacement[variable]*negated
+                                self.grid[t][y][x] = replacement[variable] * negated
 
         for t, generation in enumerate(self.background_grid):
             for y, row in enumerate(generation):
@@ -694,14 +695,14 @@ class SearchPattern:
                         variable, negated = variable_from_literal(cell)
                         if variable in replacement:
                             if replacement[variable] != variable:
-                                self.background_grid[t][y][x] = replacement[variable]*negated
+                                self.background_grid[t][y][x] = replacement[variable] * negated
 
         for transition, literal in self.rule.items():
             if literal not in [-1, 1]:
                 variable, negated = variable_from_literal(literal)
                 if variable in replacement:
                     if replacement[variable] != variable:
-                        self.rule[transition] = replacement[variable]*negated
+                        self.rule[transition] = replacement[variable] * negated
 
     def force_unequal(self, cell_pair_list):
 
@@ -754,7 +755,6 @@ class SearchPattern:
 
         return output_string
 
-
     def deterministic(self):
         log("Checking if pattern is deterministic...", 1)
         determined = make_grid(False, template=self.grid)
@@ -794,9 +794,7 @@ class SearchPattern:
 
     def background_nontrivial(self):
         return (
-                len(self.background_grid[0]) > 1
-                and len(self.background_grid[0][0]) > 1
-                and any(
-                    cell not in [-1, 1] for generation in self.background_grid for row in generation for cell in row
-                )
+            len(self.background_grid[0]) > 1
+            and len(self.background_grid[0][0]) > 1
+            and any(cell not in [-1, 1] for generation in self.background_grid for row in generation for cell in row)
         )

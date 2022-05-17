@@ -1,16 +1,17 @@
 import re
 
+
 def variable_from_literal(literal):
     """Breaks down a literal into a variable and a flag for negation"""
 
-    if isinstance(literal,str):
+    if isinstance(literal, str):
         if literal[0] == '-':
             return literal[1:], -1
         else:
             return literal, 1
-    elif isinstance(literal,int):
+    elif isinstance(literal, int):
         variable = abs(literal)
-        sign = literal//variable
+        sign = literal // variable
         return variable, sign
     else:
         raise ValueError

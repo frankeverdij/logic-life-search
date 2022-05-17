@@ -15,7 +15,7 @@ def make_grid(default_cell, *dimensions, template=None):
         assert not dimensions, 'Two sets of parameters given to make_grid'
         dimensions = []
         while isinstance(template, list):
-            dimensions.insert(0,len(template))
+            dimensions.insert(0, len(template))
             if template:
                 template = template[0]
             else:

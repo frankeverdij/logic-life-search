@@ -44,6 +44,7 @@ def object_from_file(file_name):
     log('Done\n', -1)
     return input_object
 
+
 def find_free_file_name(prefix, suffix):
     file_number = 0
     while True:
@@ -52,4 +53,3 @@ def find_free_file_name(prefix, suffix):
             break
         file_number += 1
     return file_name
-

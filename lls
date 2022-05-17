@@ -200,7 +200,7 @@ for arguments in args.population:
     else:
         constraint = arguments[0]
         times = [int(t) for t in arguments[1:]] if len(arguments) > 1 else [0]
-        re_match = re.match("(^.*?)([0-9]*$)", constraint)
+        re_match = re.match("(^.*?)(\d*$)", constraint)
         sign = re_match.group(1)
         amount = int(re_match.group(2))
         if sign in ["", "="]:
@@ -224,7 +224,7 @@ for symmetry_list, argument_list in [(symmetries, args.symmetry), (asymmetries, 
         x_translate = None
         y_translate = None
         for argument in arguments:
-            re_match = re.match("(^.*?)([0-9]*$)", argument)
+            re_match = re.match("(^.*?)(\d*$)", argument)
             letters = re_match.group(1).upper()
             number = re_match.group(2)
             if letters == "P":
@@ -307,7 +307,6 @@ if args.background_offset:
     src.literal_manipulation.offset_background(background_grid, *args.background_offset)
     src.literal_manipulation.offset_background(background_ignore_transition, *args.background_offset)
 
-
 if args.input_file_name and args.blank_search_pattern:
     raise Exception("Too many search patterns specified")
 
@@ -374,7 +373,7 @@ except UnsatInPreprocessing:
     log('Done\n', -1, 2)
     sys.exit()
 
-log("Search grid:\n",1)
+log("Search grid:\n", 1)
 log(search_pattern.make_string(pattern_output_format="csv", show_background=True))
 log('Done\n', -1)
 
@@ -400,7 +399,7 @@ for times in force_change:
 search_pattern.force_evolution(method=args.method)
 
 log('Done\n', -1, 2)
-save_state=args.save_state
+save_state = args.save_state
 if save_state:
     if isinstance(save_state, str):
         state_file = save_state
@@ -422,7 +421,7 @@ log('Number of undetermined cells: ' + str(search_pattern.number_of_cells()), 0,
 log('Number of variables: ' + str(search_pattern.number_of_variables), 0, 2)
 log('Number of clauses: ' + str(len(search_pattern.clauses)) + "\n", 0, 2)
 
-save_dimacs=args.save_dimacs
+save_dimacs = args.save_dimacs
 if save_dimacs is not None:
     if not isinstance(save_dimacs, str):
         save_dimacs = src.files.find_free_file_name("lls_dimacs", ".cnf")

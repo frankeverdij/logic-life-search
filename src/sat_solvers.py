@@ -7,6 +7,7 @@ import settings
 import src.formatting
 from src.logging import log
 
+
 class Status(enum.Enum):
     SAT = 'Satisfiable'
     UNSAT = 'Unsatisfiable'
@@ -14,6 +15,7 @@ class Status(enum.Enum):
     DRYRUN = 'Dry run'
     INTERRUPT = 'Keyboard interrupt'
     ERROR = 'Error'
+
 
 def sat_solve(search_pattern, solver=None, parameters=None, timeout=None):
     """Solve the given DIMACS problem, using the specified SAT solver"""
@@ -32,7 +34,7 @@ def sat_solve(search_pattern, solver=None, parameters=None, timeout=None):
 
 
 def use_solver(solver, dimacs_string, parameters=None, timeout=None):
-    parameter_list = parameters.strip(" ").split(" ") if parameters is not None else[]
+    parameter_list = parameters.strip(" ").split(" ") if parameters is not None else []
     solver_path = sys.path[0] + "/solvers/" + solver
     command = [solver_path] + parameter_list
 
@@ -87,7 +89,6 @@ def use_solver(solver, dimacs_string, parameters=None, timeout=None):
 
 
 def format_dimacs_output(dimacs_output):
-
     lines = dimacs_output.strip('\n').split('\n')
 
     statuses = [line[2:] for line in lines if line[0] == 's']

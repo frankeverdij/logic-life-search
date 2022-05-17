@@ -176,8 +176,10 @@ def space_evenly(grid, ignore_transition=None):
 
     return grid
 
+
 def clauses_to_dimacs(clauses, number_of_variables):
     log('Writing clauses into DIMACS format ...', 1)
-    dimacs = f"p cnf {number_of_variables} {len(clauses)}\n" + "".join(' '.join(str(literal) for literal in clause) + ' 0\n' for clause in clauses)
+    dimacs = f"p cnf {number_of_variables} {len(clauses)}\n" + "".join(
+        ' '.join(str(literal) for literal in clause) + ' 0\n' for clause in clauses)
     log('Done\n', -1)
     return dimacs
