@@ -89,12 +89,8 @@ class SearchPattern:
 
     def prepare_variables(self, grid, background_grid, rulestring):
         variable_dict = dict()
-        rule, self.number_of_variables, variable_dict = src.rules.rule_from_rulestring(rulestring,
-                                                                                       self.number_of_variables,
-                                                                                       variable_dict)
 
         new_grid = make_grid(None, template=grid)
-
         for t, generation in enumerate(grid):
             for y, row in enumerate(generation):
                 for x, cell in enumerate(row):
@@ -116,7 +112,6 @@ class SearchPattern:
                     new_grid[t][y][x] = variable * sign
 
         new_background_grid = make_grid(None, template=background_grid)
-
         for t, generation in enumerate(background_grid):
             for y, row in enumerate(generation):
                 for x, cell in enumerate(row):
@@ -136,6 +131,9 @@ class SearchPattern:
                                 variable_dict[variable_string] = self.number_of_variables
                             variable = variable_dict[variable_string]
                     new_background_grid[t][y][x] = variable * sign
+
+        rule, self.number_of_variables, variable_dict = src.rules.rule_from_rulestring(
+            rulestring, self.number_of_variables, variable_dict)
 
         return new_grid, new_background_grid, rule
 
