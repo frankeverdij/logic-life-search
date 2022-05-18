@@ -7,10 +7,20 @@ import src.rules
 import settings
 import src.files
 import src.literal_manipulation
-from src.UnsatInPreprocessing import UnsatInPreprocessing
 from src.logging import log
 from src.literal_manipulation import variable_from_literal, neighbours_from_coordinates, implies, standard_form_literal
 from src.utilities import make_grid
+
+class UnsatInPreprocessing(Exception):
+    """
+    Unsatisfiability proved before SAT solver is run
+
+    Can be called because it's impossible to continue preprocessing
+    with an unsatisfiable instance (for example
+    "search_pattern.force_equal('0', '1')") or just to complete more quickly.
+
+    """
+    pass
 
 
 class SearchPattern:

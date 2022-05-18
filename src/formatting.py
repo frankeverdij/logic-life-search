@@ -4,6 +4,7 @@ from src.rules import rulestring_from_rule
 from src.logging import log
 from src.utilities import format_carriage_returns, make_grid
 from src.literal_manipulation import standard_form_literal
+from src.sat_solvers import Status
 
 
 def parse_input_string(input_string):
@@ -183,3 +184,18 @@ def clauses_to_dimacs(clauses, number_of_variables):
         ' '.join(str(literal) for literal in clause) + ' 0\n' for clause in clauses)
     log('Done\n', -1)
     return dimacs
+
+
+def format_dimacs_output(dimacs_output):
+    lines = dimacs_output.strip('\n').split('\n')
+
+    statuses = [line[2:] for line in lines if line[0] == 's']
+    variable_lines = [line[2:] for line in lines if line[0] == 'v']
+
+    if len(statuses) != 1:
+        raise Exception('Wrong number of status lines')
+    if statuses[0] == 'UNSATISFIABLE':
+        return Status.UNSAT, None
+    elif statuses[0] == 'SATISFIABLE':
+        solution = set(int(literal) for line in variable_lines for literal in line.split() if literal != '0')
+        return Status.SAT, solution
