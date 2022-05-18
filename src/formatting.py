@@ -199,3 +199,5 @@ def format_dimacs_output(dimacs_output):
     elif statuses[0] == 'SATISFIABLE':
         solution = set(int(literal) for line in variable_lines for literal in line.split() if literal != '0')
         return Status.SAT, solution
+    else:
+        raise Exception('Unknown exit status for SAT solver')
