@@ -42,22 +42,22 @@ def sat_solve(dimacs_string, solver=None, parameters=None, timeout=None):
     except subprocess.TimeoutExpired:
         end_time = time.time()
         return Status.TIMEOUT, None, end_time - start_time
-    else:
-        log('Done\n', -1)
-        time_taken = end_time - start_time
-        log('Time taken: ' + str(time_taken))
 
-        if sat_solver_process.stderr:
-            log('Error: "' + sat_solver_process.stderr + '"')
-            return Status.ERROR, None, None
-        else:
-            out = sat_solver_process.stdout
-            log("SAT solver output:", 1)
-            log(out)
-            log('Done\n', -1)
-            log('Parsing SAT solver output...', 1)
-            status, solution = src.formatting.format_dimacs_output(out)
-            log('Done\n', -1)
+    log('Done\n', -1)
+    time_taken = end_time - start_time
+    log('Time taken: ' + str(time_taken))
+
+    if sat_solver_process.stderr:
+        log('Error: "' + sat_solver_process.stderr + '"')
+        return Status.ERROR, None, None
+
+    out = sat_solver_process.stdout
+    log("SAT solver output:", 1)
+    log(out)
+    log('Done\n', -1)
+    log('Parsing SAT solver output...', 1)
+    status, solution = src.formatting.format_dimacs_output(out)
+    log('Done\n', -1)
 
     log('Done\n', -1)
     return status, solution, time_taken
