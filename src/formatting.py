@@ -74,9 +74,9 @@ def make_rle(grid, solution, background_grid=None, rule=None, determined=None, s
         for y, row in enumerate(generation):
             for x, cell in enumerate(row):
                 if cell in solution:
-                    grid[t][y][x] = "b"
-                else:
                     grid[t][y][x] = "o"
+                else:
+                    grid[t][y][x] = "b"
 
     rle_string = "x = " + str(width) + ", y = " + str(height)
 
@@ -103,9 +103,9 @@ def make_rle(grid, solution, background_grid=None, rule=None, determined=None, s
             for y, row in enumerate(generation):
                 for x, cell in enumerate(row):
                     if cell in solution:
-                        background_grid[t][y][x] = "b"
-                    else:
                         background_grid[t][y][x] = "o"
+                    else:
+                        background_grid[t][y][x] = "b"
 
         rle_string += "\n\n".join(
             "$\n".join("".join(line) for line in generation) for generation in background_grid) + "\n"
