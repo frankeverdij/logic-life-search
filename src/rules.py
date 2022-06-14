@@ -68,39 +68,14 @@ transition_lookup = {
 }
 
 
-def rule_from_rulestring(rulestring, number_of_variables, variable_dict):
+def rule_from_rulestring(rulestring, number_of_variables):
     rule = {}
 
-    rulestring = rulestring.strip()
     original_rulestring = rulestring
 
     partial_flag = False
 
-    if rulestring[0] == "{":
-        rule_unsanitized = ast.literal_eval(rulestring)
-        for BS_letter in "BS":
-            for number_of_neighbours in "012345678":
-                for character in possible_transitions[number_of_neighbours]:
-                    variable_string, sign = variable_from_literal(
-                        standard_form_literal(str(rule_unsanitized[BS_letter + number_of_neighbours + character])))
-                    assert variable_string[-1] not in ['\xe2\x80\x99', "'"], "Can't ignore transition in rule"
-                    try:
-                        variable = int(variable_string)
-                        number_of_variables = max(number_of_variables, variable)
-                        if variable == 0:
-                            variable = -1
-                    except ValueError:
-                        if variable_string == '*':
-                            number_of_variables += 1
-                            variable = number_of_variables
-                        else:
-                            if variable_string not in variable_dict:
-                                number_of_variables += 1
-                                variable_dict[variable_string] = number_of_variables
-                            variable = variable_dict[variable_string]
-                    rule[BS_letter + number_of_neighbours + character] = variable * sign
-        return rule, number_of_variables, variable_dict
-    elif rulestring[0] in ["p", "P"]:
+    if rulestring[0] in ["p", "P"]:
         partial_flag = True
         if len(rulestring) == 1:
             rulestring = "B012345678/S012345678"
@@ -206,7 +181,7 @@ def rule_from_rulestring(rulestring, number_of_variables, variable_dict):
     if original_rulestring != new_rulestring:
         log("Rulestring parsed as: " + new_rulestring)
 
-    return rule, number_of_variables, variable_dict
+    return rule, number_of_variables
 
 
 def rulestring_from_rule(rule):

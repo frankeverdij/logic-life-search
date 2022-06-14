@@ -1,6 +1,7 @@
 import collections
 import copy
 import itertools
+import ast
 import src.taocp_variable_scheme
 import src.formatting
 import src.rules
@@ -98,27 +99,47 @@ class SearchPattern:
         self.defined_cardinality_variables = set()
 
     def prepare_variables(self, grid, background_grid, rulestring):
-        variable_dict = dict()
+        input_literals = [cell for generation in grid for row in generation for cell in row] +\
+                         [cell for generation in background_grid for row in generation for cell in row]
+
+        if rulestring[0] == '{':
+            rule = ast.literal_eval(rulestring)
+            input_literals += list(rule.values())
+
+        input_variables = set(variable_from_literal(standard_form_literal(literal)) for literal in input_literals)
+
+        variable_dict = {}
+        numeric_variables = set()
+        nonnumeric_variables = set()
+        for variable in input_variables:
+            if variable in ['0','*']:
+                continue
+            try:
+                variable_int = int(variable)
+                numeric_variables.add(variable_int)
+                variable_dict[variable] = variable_int
+            except ValueError:
+                if variable != '*':
+                    nonnumeric_variables.add(variable)
+
+        self.number_of_variables = max(self.number_of_variables, max(variable for variable in variable_dict))
+
+        for variable in nonnumeric_variables:
+            self.number_of_variables += 1
+            variable_dict[variable] = self.number_of_variables
+
+        variable_dict['0'] = -1
 
         new_grid = make_grid(None, template=grid)
         for t, generation in enumerate(grid):
             for y, row in enumerate(generation):
                 for x, cell in enumerate(row):
                     variable_string, sign = variable_from_literal(standard_form_literal(cell))
-                    try:
-                        variable = int(variable_string)
-                        self.number_of_variables = max(self.number_of_variables, variable)
-                        if variable == 0:
-                            variable = -1
-                    except ValueError:
-                        if variable_string == '*':
-                            self.number_of_variables += 1
-                            variable = self.number_of_variables
-                        else:
-                            if variable_string not in variable_dict:
-                                self.number_of_variables += 1
-                                variable_dict[variable_string] = self.number_of_variables
-                            variable = variable_dict[variable_string]
+                    if variable_string == '*':
+                        self.number_of_variables += 1
+                        variable = self.number_of_variables
+                    else:
+                        variable = variable_dict[variable_string]
                     new_grid[t][y][x] = variable * sign
 
         new_background_grid = make_grid(None, template=background_grid)
@@ -126,24 +147,25 @@ class SearchPattern:
             for y, row in enumerate(generation):
                 for x, cell in enumerate(row):
                     variable_string, sign = variable_from_literal(standard_form_literal(cell))
-                    try:
-                        variable = int(variable_string)
-                        self.number_of_variables = max(self.number_of_variables, variable)
-                        if variable == 0:
-                            variable = -1
-                    except ValueError:
-                        if variable_string == '*':
-                            self.number_of_variables += 1
-                            variable = self.number_of_variables
-                        else:
-                            if variable_string not in variable_dict:
-                                self.number_of_variables += 1
-                                variable_dict[variable_string] = self.number_of_variables
-                            variable = variable_dict[variable_string]
+                    if variable_string == '*':
+                        self.number_of_variables += 1
+                        variable = self.number_of_variables
+                    else:
+                        variable = variable_dict[variable_string]
                     new_background_grid[t][y][x] = variable * sign
 
-        rule, self.number_of_variables, variable_dict = src.rules.rule_from_rulestring(
-            rulestring, self.number_of_variables, variable_dict)
+        if rulestring[0] == '{':
+            new_rule = dict()
+            for transition in rule:
+                variable_string, sign = variable_from_literal(standard_form_literal(rule[transition]))
+                if variable_string == '*':
+                    self.number_of_variables += 1
+                    variable = self.number_of_variables
+                else:
+                    variable = variable_dict[variable_string]
+                new_rule[transition] = variable * sign
+        else:
+            new_rule, self.number_of_variables = src.rules.rule_from_rulestring(rulestring, self.number_of_variables)
 
         return new_grid, new_background_grid, rule
 
