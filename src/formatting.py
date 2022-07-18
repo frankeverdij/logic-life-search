@@ -176,3 +176,50 @@ def space_evenly(grid, ignore_transition=None):
                     grid[t][y][x] += "'"
 
     return grid
+
+lookup_block = {
+        0 : ' ' , 1 : '\u2598', 2 : '\u259d', 3 : '\u2580',
+        4 : '\u2596', 5 : '\u258c', 6 : '\u259e', 7 : '\u259b',
+        8 : '\u2597', 9 : '\u259a', 10 : '\u2590', 11 : '\u259c',
+        12 : '\u2584', 13 : '\u2599', 14 : '\u259f', 15 : '\u2588'
+        }
+
+def make_blk(
+        grid,
+        background_grid=None,
+        rule = None,
+        determined = None,
+        show_background = None,
+):
+    """Turn a search pattern in unicode block form"""
+
+    log('Format: csv')
+
+    grid = copy.deepcopy(grid)
+
+    width = len(grid[0][0])
+    height = len(grid[0])
+    period = len(grid)
+    bitmap = [[[0 for i in range(width)] for j in range(height)] for k in range(period)]
+
+    for t, generation in enumerate(grid):
+        for y, row in enumerate(generation):
+            for x, cell in enumerate(row):
+                assert cell in ["0","1"], "Cell not equal to 0 or 1 in RLE format"
+                if cell == "1":
+                    bitmap[t][y][x] = 1
+
+    blk_string = "x = " + str(width) + ", y = " + str(height)
+
+    if rule != None:
+        blk_string += ", rule = " + rulestring_from_rule(rule)
+
+    block = []
+    for i in range(0,height,2) :
+        for j in range(0,width) :
+            key = 3 * bitmap[0][i][j]
+            key += 12 * bitmap[0][i+1][j] if i+1<height else 0
+            block.append(lookup_block[key])
+        block.append('\n')
+    blk_string += '\n' + "".join(block)
+    return blk_string

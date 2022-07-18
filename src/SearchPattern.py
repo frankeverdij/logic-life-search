@@ -769,7 +769,7 @@ class SearchPattern:
 
         log('Formatting output...', 1)
 
-        assert pattern_output_format in ["rle", "csv"], "Format not recognised"
+        assert pattern_output_format in ["rle", "csv", "blk"], "Format not recognised"
 
         background_grid = copy.deepcopy(self.background_grid)
         src.literal_manipulation.offset_background(background_grid, -1, -1, 0)
@@ -790,6 +790,14 @@ class SearchPattern:
                 ignore_transition=self.ignore_transition,
                 background_grid=background_grid,
                 background_ignore_transition=background_ignore_transition,
+                rule=self.rule,
+                determined=determined,
+                show_background=show_background
+            )
+        elif pattern_output_format == "blk":
+            output_string = src.formatting.make_blk(
+                self.grid,
+                background_grid=background_grid,
                 rule=self.rule,
                 determined=determined,
                 show_background=show_background

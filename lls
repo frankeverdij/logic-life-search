@@ -92,6 +92,13 @@ parser.add_argument(
     help="Give output in csv format rather than the usual RLE."
 )
 parser.add_argument(
+    '--blk',
+    action='store_const',
+    default=None,
+    const="blk",
+    help="Give output in unicode block format rather than the usual RLE."
+)
+parser.add_argument(
     '-V', '--version',
     action="store_true",
     help='Displays the version number'
@@ -181,7 +188,11 @@ src.logging.verbosity_level = args.verbosity
 if args.version:
     log('4', 0, 1)
     sys.exit()
-pattern_output_format = args.csv
+if args.csv:
+    pattern_output_format = args.csv
+elif args.blk:
+    pattern_output_format = args.blk
+
 output_file_name = args.output_file_name
 
 log('Getting search pattern...', 1, 2)
