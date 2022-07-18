@@ -15,6 +15,6 @@ def log(message='', indent=0, verbosity_threshold=3):
         # Split on newline, carriage return or both
         lines = format_carriage_returns(message).split('\n')
         for line in lines:
-            print(("    " * indent_level) + line)
+            print(("    " * indent_level) + line, flush=True)
         if indent > 0:
             indent_level += indent
