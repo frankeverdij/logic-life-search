@@ -1,17 +1,27 @@
 import collections
 import copy
 import itertools
+import ast
 import src.taocp_variable_scheme
 import src.formatting
 import src.rules
 import settings
 import src.files
 import src.literal_manipulation
-from src.ClauseList import ClauseList
-from src.UnsatInPreprocessing import UnsatInPreprocessing
 from src.logging import log
-from src.literal_manipulation import negate, variable_from_literal, neighbours_from_coordinates, implies
+from src.literal_manipulation import variable_from_literal, neighbours_from_coordinates, implies, standard_form_literal
 from src.utilities import make_grid
+
+class UnsatInPreprocessing(Exception):
+    """
+    Unsatisfiability proved before SAT solver is run
+
+    Can be called because it's impossible to continue preprocessing
+    with an unsatisfiable instance (for example
+    "search_pattern.force_equal('0', '1')") or just to complete more quickly.
+
+    """
+    pass
 
 
 class SearchPattern:
@@ -22,9 +32,11 @@ class SearchPattern:
             ignore_transition=None,
             background_grid=None,
             background_ignore_transition=None,
-            rule=None,
-            add_border=True
+            rulestring=None
     ):
+        self.clauses = [[1]]
+        self.number_of_variables = 1
+
         self.grid = copy.deepcopy(grid)
         self.ignore_transition = (
             copy.deepcopy(ignore_transition)
@@ -33,7 +45,7 @@ class SearchPattern:
         )
         if background_grid is None:
             (
-                self.background_grid,
+                background_grid,
                 self.background_ignore_transition
             ) = src.formatting.parse_input_string(
                 src.files.string_from_file(
@@ -41,115 +53,125 @@ class SearchPattern:
                 )
             )
         else:
-            self.background_grid = copy.deepcopy(background_grid)
             self.background_ignore_transition = (
                 copy.deepcopy(background_ignore_transition)
                 if (background_ignore_transition is not None)
                 else make_grid(False, template=background_grid)
             )
-        self.clauses = ClauseList()
-        self.rule = (copy.deepcopy(rule)
-                     if (rule is not None)
-                     else src.rules.rule_from_rulestring(settings.rulestring))
 
-        if add_border:
-            width = len(self.grid[0][0])
-            height = len(self.grid[0])
-            duration = len(self.grid)
-            background_width = len(self.background_grid[0][0])
-            background_height = len(self.background_grid[0])
-            background_duration = len(self.background_grid)
+        if rulestring is None:
+            rulestring = settings.rulestring
+        self.grid, self.background_grid, self.rule = self.prepare_variables(grid, background_grid, rulestring)
 
-            # Surround the grid by one cell from the background, and offset the background accordingly
-            src.literal_manipulation.offset_background(self.background_grid, 1, 1, 0)
-            new_grid = make_grid("0", width + 2, height + 2, duration)
-            for x in range(width + 2):
-                for y in range(height + 2):
-                    for t in range(duration):
-                        if x in range(1, width + 1) and y in range(1, height + 1):
-                            new_grid[t][y][x] = self.grid[t][y - 1][x - 1]
-                        else:
-                            new_grid[t][y][x] = self.background_grid[t % background_duration][y % background_height][
+        width = len(self.grid[0][0])
+        height = len(self.grid[0])
+        duration = len(self.grid)
+        background_width = len(self.background_grid[0][0])
+        background_height = len(self.background_grid[0])
+        background_duration = len(self.background_grid)
+
+        # Surround the grid by one cell from the background, and offset the background accordingly
+        src.literal_manipulation.offset_background(self.background_grid, 1, 1, 0)
+        new_grid = make_grid("0", width + 2, height + 2, duration)
+        for x in range(width + 2):
+            for y in range(height + 2):
+                for t in range(duration):
+                    if x in range(1, width + 1) and y in range(1, height + 1):
+                        new_grid[t][y][x] = self.grid[t][y - 1][x - 1]
+                    else:
+                        new_grid[t][y][x] = self.background_grid[t % background_duration][y % background_height][
+                            x % background_width]
+        self.grid = new_grid
+        src.literal_manipulation.offset_background(self.background_ignore_transition, 1, 1, 0)
+        new_ignore_transition = make_grid("0", width + 2, height + 2, duration)
+        for x in range(width + 2):
+            for y in range(height + 2):
+                for t in range(duration):
+                    if 1 <= x <= width and 1 <= y <= height:
+                        new_ignore_transition[t][y][x] = self.ignore_transition[t][y - 1][x - 1]
+                    else:
+                        new_ignore_transition[t][y][x] = \
+                            self.background_ignore_transition[t % background_duration][y % background_height][
                                 x % background_width]
-            self.grid = new_grid
-            src.literal_manipulation.offset_background(self.background_ignore_transition, 1, 1, 0)
-            new_ignore_transition = make_grid("0", width + 2, height + 2, duration)
-            for x in range(width + 2):
-                for y in range(height + 2):
-                    for t in range(duration):
-                        if 1 <= x <= width and 1 <= y <= height:
-                            new_ignore_transition[t][y][x] = self.ignore_transition[t][y - 1][x - 1]
-                        else:
-                            new_ignore_transition[t][y][x] = \
-                                self.background_ignore_transition[t % background_duration][y % background_height][
-                                    x % background_width]
-            self.ignore_transition = new_ignore_transition
+        self.ignore_transition = new_ignore_transition
 
-    def __eq__(self, other):
-        if other is None:
-            return False
+        self.cardinality_variables = dict()
+        self.defined_cardinality_variables = set()
+
+    def prepare_variables(self, grid, background_grid, rulestring):
+        input_literals = [cell for generation in grid for row in generation for cell in row] +\
+                         [cell for generation in background_grid for row in generation for cell in row]
+
+        if rulestring[0] == '{':
+            rule = ast.literal_eval(rulestring)
+            input_literals += list(rule.values())
+
+        input_variables = set(variable_from_literal(standard_form_literal(literal)) for literal in input_literals)
+
+        variable_dict = {}
+        numeric_variables = set()
+        nonnumeric_variables = set()
+        for variable in input_variables:
+            if variable in ['0','*']:
+                continue
+            try:
+                variable_int = int(variable)
+                numeric_variables.add(variable_int)
+                variable_dict[variable] = variable_int
+            except ValueError:
+                if variable != '*':
+                    nonnumeric_variables.add(variable)
+
+        self.number_of_variables = max(self.number_of_variables, max(variable for variable in variable_dict))
+
+        for variable in nonnumeric_variables:
+            self.number_of_variables += 1
+            variable_dict[variable] = self.number_of_variables
+
+        variable_dict['0'] = -1
+
+        new_grid = make_grid(None, template=grid)
+        for t, generation in enumerate(grid):
+            for y, row in enumerate(generation):
+                for x, cell in enumerate(row):
+                    variable_string, sign = variable_from_literal(standard_form_literal(cell))
+                    if variable_string == '*':
+                        self.number_of_variables += 1
+                        variable = self.number_of_variables
+                    else:
+                        variable = variable_dict[variable_string]
+                    new_grid[t][y][x] = variable * sign
+
+        new_background_grid = make_grid(None, template=background_grid)
+        for t, generation in enumerate(background_grid):
+            for y, row in enumerate(generation):
+                for x, cell in enumerate(row):
+                    variable_string, sign = variable_from_literal(standard_form_literal(cell))
+                    if variable_string == '*':
+                        self.number_of_variables += 1
+                        variable = self.number_of_variables
+                    else:
+                        variable = variable_dict[variable_string]
+                    new_background_grid[t][y][x] = variable * sign
+
+        if rulestring[0] == '{':
+            new_rule = dict()
+            for transition in rule:
+                variable_string, sign = variable_from_literal(standard_form_literal(rule[transition]))
+                if variable_string == '*':
+                    self.number_of_variables += 1
+                    variable = self.number_of_variables
+                else:
+                    variable = variable_dict[variable_string]
+                new_rule[transition] = variable * sign
         else:
-            return (
-                    self.grid == other.grid
-                    and self.ignore_transition == other.ignore_transition
-                    and self.background_grid == other.background_grid
-                    and self.background_ignore_transition == other.ignore_transition
-                    and self.clauses == other.clauses
-                    and self.rule == other.rule
-            )
+            new_rule, self.number_of_variables = src.rules.rule_from_rulestring(rulestring, self.number_of_variables)
 
-    def __ne__(self, other):
-        return not __eq__(self, other)
-
-    def standardise_variables_names(self):
-        log("Standardising variable names...", 1)
-
-        # Give variables standard names and replace stars with new variable names
-        standard_variables_from_input_variables = {}
-        current_variable_number = 0
-
-        for t, generation in enumerate(self.background_grid):
-            for y, row in enumerate(generation):
-                for x, cell in enumerate(row):
-                    if cell == "*":
-                        self.background_grid[t][y][x] = "c" + str(current_variable_number)
-                        current_variable_number += 1
-                    elif cell not in ["0", "1"]:
-                        (variable, negated) = variable_from_literal(cell)
-                        if variable not in standard_variables_from_input_variables:
-                            standard_variables_from_input_variables[variable] = negate(
-                                "c" + str(current_variable_number), negated)
-                            current_variable_number += 1
-                        self.background_grid[t][y][x] = negate(standard_variables_from_input_variables[variable],
-                                                               negated)
-        for t, generation in enumerate(self.grid):
-            for y, row in enumerate(generation):
-                for x, cell in enumerate(row):
-                    if cell == "*":
-                        self.grid[t][y][x] = "c" + str(current_variable_number)
-                        current_variable_number += 1
-                    elif cell not in ["0", "1"]:
-                        (variable, negated) = variable_from_literal(cell)
-                        if variable not in standard_variables_from_input_variables:
-                            standard_variables_from_input_variables[variable] = negate(
-                                "c" + str(current_variable_number), negated)
-                            current_variable_number += 1
-                        self.grid[t][y][x] = negate(standard_variables_from_input_variables[variable], negated)
-        # Rename any literals in rule
-        for transition, literal in self.rule.items():
-            if literal not in ["0", "1"]:
-                (variable, negated) = variable_from_literal(literal)
-                if variable not in standard_variables_from_input_variables:
-                    standard_variables_from_input_variables[variable] = negate("c" + str(current_variable_number),
-                                                                               negated)
-                    current_variable_number += 1
-                self.rule[transition] = negate(standard_variables_from_input_variables[variable], negated)
-
-        log("Done\n", -1)
+        return new_grid, new_background_grid, rule
 
     def number_of_cells(self):
-        return len(set(variable_from_literal(cell) for generation in self.grid for row in generation for cell in row if
-                       cell not in ["0", "1"]))
+        return len(set(abs(cell) for generation in self.grid for row in generation for cell in row if
+                       cell not in [1, -1]))
 
     def remove_redundancies(self):
         log("Removing redundant transitions...", 1)
@@ -169,11 +191,11 @@ class SearchPattern:
                             self.background_grid[t][y][x] = parents_dict[parents_string]
                             to_force_equal.append((parents_dict[parents_string], cell))
                             self.background_ignore_transition[t][y][x] = True
-                        elif all(parent in ["0", "1"] for parent in parents):
-                            bs_letter = ["B", "S"][["0", "1"].index(predecessor_cell)]
+                        elif all(parent in [-1, 1] for parent in parents):
+                            bs_letter = ["B", "S"][[-1, 1].index(predecessor_cell)]
                             transition = src.rules.transition_from_cells(neighbours)
                             child = self.rule[bs_letter + transition]
-                            if cell not in ["0", "1"]:
+                            if cell not in [-1, 1]:
                                 self.background_grid[t][y][x] = child
                             to_force_equal.append((cell, child))
                             self.background_ignore_transition[t][y][x] = True
@@ -197,11 +219,11 @@ class SearchPattern:
                                 self.grid[t][y][x] = parents_dict[parents_string]
                                 to_force_equal.append((parents_dict[parents_string], cell))
                                 self.ignore_transition[t][y][x] = True
-                            elif all(parent in ["0", "1"] for parent in parents):
-                                bs_letter = ["B", "S"][["0", "1"].index(predecessor_cell)]
+                            elif all(parent in [-1, 1] for parent in parents):
+                                bs_letter = ["B", "S"][[-1, 1].index(predecessor_cell)]
                                 transition = src.rules.transition_from_cells(neighbours)
                                 child = self.rule[bs_letter + transition]
-                                if cell not in ["0", "1"]:
+                                if cell not in [-1, 1]:
                                     self.grid[t][y][x] = child
                                 to_force_equal.append((cell, child))
                                 self.ignore_transition[t][y][x] = True
@@ -224,20 +246,22 @@ class SearchPattern:
             # If any four neighbours were live, then the cell is
             # dead
             for four_neighbours in itertools.combinations(neighbours, 4):
-                clause = implies(four_neighbours, negate(cell))
-                self.clauses.append(clause)
+                self.clauses.append(
+                    implies(four_neighbours, -cell)
+                )
 
             # If any seven neighbours were dead, the cell is dead
             for seven_neighbours in itertools.combinations(neighbours, 7):
-                clause = implies([negate(neighbour) for neighbour in seven_neighbours], negate(cell))
-                self.clauses.append(clause)
+                self.clauses.append(
+                    implies([-neighbour for neighbour in seven_neighbours], -cell)
+                )
 
             # If the cell was dead, and any six neighbours were
             # dead, the cell is dead
             for six_neighbours in itertools.combinations(neighbours, 6):
-                clause = implies([negate(predecessor_cell)] + [negate(neighbour) for neighbour in six_neighbours],
-                                 negate(cell))
-                self.clauses.append(clause)
+                self.clauses.append(
+                    implies([-predecessor_cell] + [-neighbour for neighbour in six_neighbours], -cell)
+                )
 
             # If three neighbours were alive and five were dead,
             # then the cell is live
@@ -246,7 +270,7 @@ class SearchPattern:
                 neighbours_counter.subtract(three_neighbours)
                 three_neighbours, five_neighbours = list(three_neighbours), list(neighbours_counter.elements())
 
-                clause = implies(three_neighbours + [negate(neighbour) for neighbour in five_neighbours], cell)
+                clause = implies(three_neighbours + [-neighbour for neighbour in five_neighbours], cell)
                 self.clauses.append(clause)
 
             # Finally, if the cell was live, and two neighbours
@@ -258,7 +282,7 @@ class SearchPattern:
                 two_neighbours, five_neighbours = list(two_neighbours), list(neighbours_counter.elements())[1:]
 
                 clause = implies(
-                    [predecessor_cell] + two_neighbours + [negate(neighbour) for neighbour in five_neighbours], cell)
+                    [predecessor_cell] + two_neighbours + [-neighbour for neighbour in five_neighbours], cell)
                 self.clauses.append(clause)
 
         elif method == 2:
@@ -266,21 +290,21 @@ class SearchPattern:
             predecessor_cell = grid[(t - 1) % duration][y][x]
             neighbours = neighbours_from_coordinates(self.grid, x, y, t, background_grid=self.background_grid)
 
-            booleans = [True, False]
+            states = [-1, 1]
 
             # For each combination of neighbourhoods
-            for predecessor_cell_alive in booleans:
-                for neighbours_alive in itertools.product(booleans, repeat=8):
-                    p = "S" if predecessor_cell_alive else "B"
+            for predecessor_cell_alive in states:
+                for neighbours_alive in itertools.product(states, repeat=8):
+                    p = "S" if predecessor_cell_alive == 1 else "B"
                     transition = src.rules.transition_from_cells(neighbours_alive)
                     transition_literal = self.rule[p + transition]
 
                     self.clauses.append(implies(
-                        [transition_literal] + [negate(predecessor_cell, not predecessor_cell_alive)] + list(
-                            map(negate, neighbours, map(lambda q: not q, neighbours_alive))), cell))
+                        [transition_literal] + [predecessor_cell * predecessor_cell_alive] +
+                        [neighbours[i] * neighbours_alive[i] for i in range(8)], cell))
                     self.clauses.append(implies(
-                        [negate(transition_literal)] + [negate(predecessor_cell, not predecessor_cell_alive)] + list(
-                            map(negate, neighbours, map(lambda q: not q, neighbours_alive))), negate(cell)))
+                        [-transition_literal] + [predecessor_cell * predecessor_cell_alive] +
+                        [neighbours[i] * neighbours_alive[i] for i in range(8)], -cell))
 
     def force_evolution(self, method=None):
         """Adds clauses that force the search pattern to obey the transition rule"""
@@ -305,7 +329,7 @@ class SearchPattern:
             self.rule) == "B3/S23", "Rules other than Life can only use method 2"
 
         log("Method: " + str(method))
-        starting_number_of_clauses = len(self.clauses.clause_set)
+        starting_number_of_clauses = len(self.clauses)
         # Iterate over all cells not in the first generation
         for t, generation in enumerate(self.grid):
             if t > 0:
@@ -321,7 +345,7 @@ class SearchPattern:
                     if not self.background_ignore_transition[t][y][x]:
                         self.force_transition(self.background_grid, x, y, t, method)
 
-        log("Number of clauses used: " + str(len(self.clauses.clause_set) - starting_number_of_clauses))
+        log("Number of clauses used: " + str(len(self.clauses) - starting_number_of_clauses))
         log("Done\n", -1)
 
     def force_change(self, times):
@@ -330,14 +354,14 @@ class SearchPattern:
         (t_0, t_1) = times
         log("Forcing at least one cell to change between generations " + str(t_0) + " and " + str(t_1) + " ...", 1)
 
-        starting_number_of_clauses = len(self.clauses.clause_set)
+        starting_number_of_clauses = len(self.clauses)
 
         width = len(self.grid[0][0])
         height = len(self.grid[0])
 
         self.force_unequal([(self.grid[t_0][y][x], self.grid[t_1][y][x]) for x in range(width) for y in range(height)])
 
-        log("Number of clauses used: " + str(len(self.clauses.clause_set) - starting_number_of_clauses))
+        log("Number of clauses used: " + str(len(self.clauses) - starting_number_of_clauses))
         log("Done\n", -1)
 
     def force_distinct(self, solution, determined=False):
@@ -345,91 +369,67 @@ class SearchPattern:
 
         log("Forcing pattern to be different from solution...", 1)
 
-        clause = []
+        variables = set()
 
         for t, generation in enumerate(self.grid):
             if t == 0 or not determined:
-                for y, row in enumerate(generation):
-                    for x, cell in enumerate(row):
-                        other_cell = solution.grid[t][y][x]
-                        assert other_cell in ["0", "1"], "Only use force_distinct against solved patterns"
-                        if other_cell == "0":
-                            clause.append(cell)
-                        else:
-                            clause.append(negate(cell))
+                for row in generation:
+                    for cell in row:
+                        variables.add(abs(cell))
 
-        for t, generation in enumerate(self.background_grid):
-            for y, row in enumerate(generation):
-                for x, cell in enumerate(row):
-                    other_cell = solution.background_grid[t][y][x]
-                    assert other_cell in ["0", "1"], "Only use force_distinct against solved patterns"
-                    if other_cell == "0":
-                        clause.append(cell)
-                    else:
-                        clause.append(negate(cell))
+        for generation in self.background_grid:
+            for row in generation:
+                for cell in row:
+                    variables.add(abs(cell))
 
-        for transition, literal in self.rule.items():
-            other_literal = solution.rule[transition]
-            assert other_literal in ["0", "1"], "Only use force_distinct against solved patterns"
-            if other_literal == "0":
-                clause.append(literal)
-            else:
-                clause.append(negate(literal))
-        self.clauses.append(clause)
+        for literal in self.rule.values():
+            variables.add(abs(literal))
+
+        self.clauses.append([-literal for literal in solution if abs(literal) in variables])
         log("Number of clauses used: 1")
         log("Done\n", -1)
 
-    def define_cardinality_variable(self, literals, at_least, already_defined=None, preprocessing=True):
+    def get_cardinality_variable(self, literals, at_least):
+        if (literals, at_least) not in self.cardinality_variables:
+            self.number_of_variables += 1
+            self.cardinality_variables[(literals, at_least)] = self.number_of_variables
+        return self.cardinality_variables[(literals, at_least)]
+
+    def define_cardinality_variable(self, literals, at_least, preprocessing=True):
         """Generates clauses defining a cardinality variable"""
 
         if preprocessing:
-            # Remove "0"s and "1"s
-            literals_copy = []
-            for literal in literals:
-                if literal in ["0", "1"]:
-                    at_least -= int(literal)
-                else:
-                    literals_copy.append(literal)
+            at_least -= literals.count(1)
+            literals = tuple(sorted(literal for literal in literals if abs(literal) != 1))
+        name = self.get_cardinality_variable(literals, at_least)
 
-            literals_copy.sort()
-        else:
-            literals_copy = copy.deepcopy(literals)
+        if (literals, at_least) not in self.defined_cardinality_variables:
+            self.defined_cardinality_variables.add((literals, at_least))
 
-        if already_defined is None:
-            already_defined = []
-
-        def cardinality_variable_name(literals, at_least):
-            return "at_least_" + str(at_least) + "_of_" + str(literals)
-
-        name = cardinality_variable_name(literals_copy, at_least)
-
-        if name not in already_defined:
-            already_defined.append(name)
-
-            max_literals = len(literals_copy)  # The most literals that could be true
+            max_literals = len(literals)  # The most literals that could be true
             max_literals_1 = max_literals // 2
-            literals_1 = literals_copy[:max_literals_1]
+            literals_1 = literals[:max_literals_1]
             variables_to_define_1 = []  # A list of variables we need to define
             max_literals_2 = max_literals - max_literals_1
-            literals_2 = literals_copy[max_literals_1:]
+            literals_2 = literals[max_literals_1:]
             variables_to_define_2 = []  # A list of variables we need to define
 
             # If at_least is obviously too small or too big, give the obvious answer
             if at_least <= 0:
                 self.clauses.append([name])
             elif at_least > max_literals:
-                self.clauses.append([negate(name)])
+                self.clauses.append([-name])
             elif max_literals == 1:
-                literal = literals_copy[0]
-                self.clauses.append([negate(name), literal])
-                self.clauses.append([name, negate(literal)])
+                literal = literals[0]
+                self.clauses.append([-name, literal])
+                self.clauses.append([name, -literal])
 
             # Otherwise define the appropriate clauses
             else:
                 if at_least <= max_literals_1:
                     self.clauses.append(
                         implies(
-                            cardinality_variable_name(literals_1, at_least),
+                            self.get_cardinality_variable(literals_1, at_least),
                             name))
                     variables_to_define_1.append(at_least)
                 for j in range(1, max_literals_2 + 1):
@@ -437,15 +437,15 @@ class SearchPattern:
                         if i + j == at_least:
                             self.clauses.append(
                                 implies(
-                                    [cardinality_variable_name(literals_1, i),
-                                     cardinality_variable_name(literals_2, j)],
+                                    [self.get_cardinality_variable(literals_1, i),
+                                     self.get_cardinality_variable(literals_2, j)],
                                     name))
                             variables_to_define_1.append(i)
                             variables_to_define_2.append(j)
                 if at_least <= max_literals_2:
                     self.clauses.append(
                         implies(
-                            cardinality_variable_name(literals_2, at_least),
+                            self.get_cardinality_variable(literals_2, at_least),
                             name))
                     variables_to_define_2.append(at_least)
 
@@ -453,24 +453,24 @@ class SearchPattern:
                     i = at_least - max_literals_2
                     self.clauses.append(
                         implies(
-                            negate(cardinality_variable_name(literals_1, i)),
-                            negate(name)))
+                            -self.get_cardinality_variable(literals_1, i),
+                            -name))
                     variables_to_define_1.append(i)
                 for j in range(1, max_literals_2 + 1):
                     for i in range(1, max_literals_1 + 1):
                         if i + j == at_least + 1:
                             self.clauses.append(implies([
-                                negate(cardinality_variable_name(literals_1, i)),
-                                negate(cardinality_variable_name(literals_2, j))],
-                                negate(name)))
+                                -self.get_cardinality_variable(literals_1, i),
+                                -self.get_cardinality_variable(literals_2, j)],
+                                -name))
                             variables_to_define_1.append(i)
                             variables_to_define_2.append(j)
                 if at_least > max_literals_1:
                     j = at_least - max_literals_1
                     self.clauses.append(
                         implies(
-                            negate(cardinality_variable_name(literals_2, j)),
-                            negate(name)))
+                            -self.get_cardinality_variable(literals_2, j),
+                            -name))
                     variables_to_define_2.append(j)
 
             # Remove duplicates from our lists of child variables we need to define
@@ -479,9 +479,9 @@ class SearchPattern:
 
             # Define the child variables
             for at_least_1 in variables_to_define_1:
-                self.define_cardinality_variable(literals_1, at_least_1, already_defined, preprocessing=False)
+                self.define_cardinality_variable(literals_1, at_least_1, preprocessing=False)
             for at_least_2 in variables_to_define_2:
-                self.define_cardinality_variable(literals_2, at_least_2, already_defined, preprocessing=False)
+                self.define_cardinality_variable(literals_2, at_least_2, preprocessing=False)
         return name
 
     def force_symmetry(self, symmetry):
@@ -533,8 +533,8 @@ class SearchPattern:
                 lambda x, y: (y - y_translate, x - x_translate)
             ),
             "RE|": (
-               lambda x, y: ((width - 1) - x + x_translate, y + y_translate),
-               lambda x, y: ((width - 1) - (x - x_translate), y - y_translate)
+                lambda x, y: ((width - 1) - x + x_translate, y + y_translate),
+                lambda x, y: ((width - 1) - (x - x_translate), y - y_translate)
             ),
             "RE/": (
                 lambda x, y: ((height - 1) - y + x_translate, (height - 1) - x + y_translate),
@@ -573,15 +573,15 @@ class SearchPattern:
     def force_at_least(self, literals, amount):
         """Adds clauses forcing at least the given amount of literals to be true"""
 
-        starting_number_of_clauses = len(self.clauses.clause_set)
+        starting_number_of_clauses = len(self.clauses)
         name = self.define_cardinality_variable(literals, amount)
         self.clauses.append([name])
-        log("Number of clauses used: " + str(len(self.clauses.clause_set) - starting_number_of_clauses))
+        log("Number of clauses used: " + str(len(self.clauses) - starting_number_of_clauses))
 
     def force_at_most(self, literals, amount):
         """Adds clauses forcing at most the given amount of literals to be true"""
 
-        self.force_at_least(map(negate, literals), len(literals) - amount)
+        self.force_at_least([-literal for literal in literals], len(literals) - amount)
 
     def force_exactly(self, literals, amount):
         """Adds clauses forcing exactly the given amount of literals to be true"""
@@ -622,9 +622,10 @@ class SearchPattern:
             literals = []
             for x in range(width):
                 for y in range(height):
-                    literal = str(t) + "_" + str(x) + "_" + str(y) + "_changes"
-                    self.clauses.append(implies([self.grid[t][y][x], negate(self.grid[0][y][x])], literal))
-                    self.clauses.append(implies([negate(self.grid[t][y][x]), self.grid[0][y][x]], literal))
+                    self.number_of_variables += 1
+                    literal = self.number_of_variables
+                    self.clauses.append(implies([self.grid[t][y][x], -self.grid[0][y][x]], literal))
+                    self.clauses.append(implies([-self.grid[t][y][x], self.grid[0][y][x]], literal))
                     literals.append(literal)
             log("Generation " + str(t))
             self.force_at_most(literals, max_change)
@@ -639,8 +640,9 @@ class SearchPattern:
             literals = []
             for x in range(width):
                 for y in range(height):
-                    literal = str(t) + "_" + str(x) + "_" + str(y) + "_decays"
-                    self.clauses.append(implies([negate(self.grid[t][y][x]), self.grid[0][y][x]], literal))
+                    self.number_of_variables += 1
+                    literal = self.number_of_variables
+                    self.clauses.append(implies([-self.grid[t][y][x], self.grid[0][y][x]], literal))
                     literals.append(literal)
             log("Generation " + str(t))
             self.force_at_most(literals, max_decay)
@@ -655,52 +657,45 @@ class SearchPattern:
             literals = []
             for x in range(width):
                 for y in range(height):
-                    literal = str(t) + "_" + str(x) + "_" + str(y) + "_grows"
-                    self.clauses.append(implies([self.grid[t][y][x], negate(self.grid[0][y][x])], literal))
+                    self.number_of_variables += 1
+                    literal = self.number_of_variables
+                    self.clauses.append(implies([self.grid[t][y][x], -self.grid[0][y][x]], literal))
                     literals.append(literal)
             log("Generation " + str(t))
-            self.force_at_most(literals, max_growth )
+            self.force_at_most(literals, max_growth)
         log("Done\n", -1)
 
-    def force_equal(self, argument_0, argument_1=None):
-
-        if argument_1 is not None:
-            assert isinstance(argument_0, str) and isinstance(argument_1, str), "force_equal arguments not understood"
-            cell_pair_list = [(argument_0, argument_1)]
-        elif argument_0 == []:
-            return
-        elif isinstance(argument_0[0], str):
-            assert len(argument_0) == 2 and isinstance(argument_0[1], str), "force_equal arguments not understood"
-            cell_pair_list = [argument_0]
-        else:
-            cell_pair_list = argument_0
+    def force_equal(self, cell_pair_list):
 
         replacement = {}
         replaces = {}
 
         for cell_0, cell_1 in cell_pair_list:
-            while cell_0 not in ["0", "1"]:
+            variable_0, negated_0 = variable_from_literal(cell_0)
+            variable_1, negated_1 = variable_from_literal(cell_1)
+            cell_0, cell_1 = max(variable_0,variable_1), min(variable_0,variable_1) * negated_0 * negated_1
+            while cell_0 not in [-1, 1]:
                 variable_0, negated_0 = variable_from_literal(cell_0)
                 if variable_0 in replacement:
-                    cell_0 = negate(replacement[variable_0], negated_0)
+                    cell_0 = replacement[variable_0] * negated_0
                 else:
                     break
-            while cell_1 not in ["0", "1"]:
+            while cell_1 not in [-1, 1]:
                 variable_1, negated_1 = variable_from_literal(cell_1)
                 if variable_1 in replacement:
-                    cell_1 = negate(replacement[variable_1], negated_1)
+                    cell_1 = replacement[variable_1] * negated_1
                 else:
                     break
             if cell_0 != cell_1:
-                if cell_0 == negate(cell_1):
+                if cell_0 == -cell_1:
                     raise UnsatInPreprocessing
-                elif cell_0 in ["0", "1"]:
+                elif cell_0 in [-1, 1]:
                     cell_0, cell_1 = cell_1, cell_0
 
                 variable_0, negated_0 = variable_from_literal(cell_0)
-                cell_0, cell_1 = variable_0, negate(cell_1, negated_0)
+                cell_0, cell_1 = variable_0, cell_1 * negated_0
 
-                if cell_1 not in ["0", "1"]:
+                if cell_1 not in [-1, 1]:
                     variable_1, negated_1 = variable_from_literal(cell_1)
                     if variable_1 not in replaces:
                         replaces[variable_1] = []
@@ -708,58 +703,49 @@ class SearchPattern:
                 if variable_0 in replaces:
                     for variable in replaces[variable_0]:
                         replacement_variable, replacement_negated = variable_from_literal(replacement[variable])
-                        replacement[variable] = negate(cell_1, replacement_negated)
-                        if cell_1 not in ["0", "1"]:
+                        replacement[variable] = cell_1 * replacement_negated
+                        if cell_1 not in [-1, 1]:
                             replaces[variable_1].append(variable)
                     del replaces[variable_0]
 
                 replacement[variable_0] = cell_1
-                if cell_1 not in ["0", "1"]:
+                if cell_1 not in [-1, 1]:
                     replaces[variable_1].append(variable_0)
 
         for t, generation in enumerate(self.grid):
             for y, row in enumerate(generation):
                 for x, cell in enumerate(row):
-                    if cell not in ["0", "1"]:
+                    if cell not in [-1, 1]:
                         variable, negated = variable_from_literal(cell)
                         if variable in replacement:
                             if replacement[variable] != variable:
-                                self.grid[t][y][x] = negate(replacement[variable], negated)
+                                self.grid[t][y][x] = replacement[variable] * negated
 
         for t, generation in enumerate(self.background_grid):
             for y, row in enumerate(generation):
                 for x, cell in enumerate(row):
-                    if cell not in ["0", "1"]:
+                    if cell not in [-1, 1]:
                         variable, negated = variable_from_literal(cell)
                         if variable in replacement:
                             if replacement[variable] != variable:
-                                self.background_grid[t][y][x] = negate(replacement[variable], negated)
+                                self.background_grid[t][y][x] = replacement[variable] * negated
 
         for transition, literal in self.rule.items():
-            if literal not in ["0", "1"]:
+            if literal not in [-1, 1]:
                 variable, negated = variable_from_literal(literal)
                 if variable in replacement:
                     if replacement[variable] != variable:
-                        self.rule[transition] = negate(replacement[variable], negated)
+                        self.rule[transition] = replacement[variable] * negated
 
-    def force_unequal(self, argument_0, argument_1=None):
-        if argument_1 is not None:
-            assert isinstance(argument_0, str) and isinstance(argument_1, str), "force_equal arguments not understood"
-            cell_pair_list = [(argument_0, argument_1)]
-        elif argument_0 == []:
-            return
-        elif isinstance(argument_0[0], str):
-            assert len(argument_0) == 2 and isinstance(argument_0[1], str), "force_equal arguments not understood"
-            cell_pair_list = [argument_0]
-        else:
-            cell_pair_list = argument_0
+    def force_unequal(self, cell_pair_list):
 
         clause = []
         for cell_pair in cell_pair_list:
-            cells_equal = str(cell_pair[0]) + "_equals_" + str(cell_pair[1])
+            self.number_of_variables += 1
+            cells_equal = self.number_of_variables
             self.clauses.append(implies(cell_pair, cells_equal))
-            self.clauses.append(implies(map(negate, cell_pair), cells_equal))
-            clause.append(negate(cells_equal))
+            self.clauses.append(implies([-cell for cell in cell_pair], cells_equal))
+            clause.append(-cells_equal)
 
         self.clauses.append(clause)
 
@@ -779,6 +765,7 @@ class SearchPattern:
         if pattern_output_format == "rle":
             output_string = src.formatting.make_rle(
                 self.grid,
+                solution={1},
                 background_grid=background_grid,
                 rule=self.rule,
                 determined=determined,
@@ -809,72 +796,6 @@ class SearchPattern:
 
         return output_string
 
-    def substitute_solution(self, solution):
-        """Return a copy of the search_pattern with the solution substituted back into it"""
-        grid = copy.deepcopy(self.grid)
-        rule = copy.deepcopy(self.rule)
-        background_grid = copy.deepcopy(self.background_grid)
-
-        log('Substituting solution back into search grid...', 1)
-
-        for t, generation in enumerate(grid):
-            for y, row in enumerate(generation):
-                for x, cell in enumerate(row):
-                    if cell in ["0", "1"]:
-                        pass
-                    else:
-                        (CNF_variable, negated) = variable_from_literal(cell)
-                        if CNF_variable in self.clauses.dimacs_literal_from_variable:
-                            dimacs_variable = self.clauses.dimacs_literal_from_variable[CNF_variable]
-
-                            dimacs_literal = negate(dimacs_variable, negated, dimacs=True)
-
-                            if dimacs_literal in solution:
-                                grid[t][y][x] = "1"
-                            else:
-                                grid[t][y][x] = "0"
-                        else:
-                            grid[t][y][x] = "0"
-
-        for t, generation in enumerate(background_grid):
-            for y, row in enumerate(generation):
-                for x, cell in enumerate(row):
-                    if cell in ["0", "1"]:
-                        pass
-                    else:
-                        (CNF_variable, negated) = variable_from_literal(cell)
-                        if CNF_variable in self.clauses.dimacs_literal_from_variable:
-                            dimacs_variable = self.clauses.dimacs_literal_from_variable[CNF_variable]
-
-                            dimacs_literal = negate(dimacs_variable, negated, dimacs=True)
-
-                            if dimacs_literal in solution:
-                                background_grid[t][y][x] = "1"
-                            else:
-                                background_grid[t][y][x] = "0"
-                        else:
-                            background_grid[t][y][x] = "0"
-
-        for transition, literal in rule.items():
-            if literal in ["0", "1"]:
-                pass
-            else:
-                (CNF_variable, negated) = variable_from_literal(literal)
-                if CNF_variable in self.clauses.dimacs_literal_from_variable:
-                    dimacs_variable = self.clauses.dimacs_literal_from_variable[CNF_variable]
-
-                    dimacs_literal = negate(dimacs_variable, negated, dimacs=True)
-
-                    if dimacs_literal in solution:
-                        rule[transition] = "1"
-                    else:
-                        rule[transition] = "0"
-                else:
-                    rule[transition] = "0"
-        log('Done\n', -1)
-
-        return SearchPattern(grid, background_grid=background_grid, rule=rule, add_border=False)
-
     def deterministic(self):
         log("Checking if pattern is deterministic...", 1)
         determined = make_grid(False, template=self.grid)
@@ -888,7 +809,7 @@ class SearchPattern:
                 for y, row in enumerate(generation):
                     for x, cell in enumerate(row):
                         if not determined[t][y][x]:
-                            if cell in ["0", "1"]:
+                            if cell in [-1, 1]:
                                 determined[t][y][x] = True
                             else:
                                 variable, negated = variable_from_literal(cell)
@@ -914,9 +835,7 @@ class SearchPattern:
 
     def background_nontrivial(self):
         return (
-                len(self.background_grid[0]) > 1
-                and len(self.background_grid[0][0]) > 1
-                and any(
-                    cell not in ["0", "1"] for generation in self.background_grid for row in generation for cell in row
-                )
+            len(self.background_grid[0]) > 1
+            and len(self.background_grid[0][0]) > 1
+            and any(cell not in [-1, 1] for generation in self.background_grid for row in generation for cell in row)
         )

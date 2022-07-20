@@ -4,6 +4,7 @@ from src.rules import rulestring_from_rule
 from src.logging import log
 from src.utilities import format_carriage_returns, make_grid
 from src.literal_manipulation import standard_form_literal
+from src.sat_solvers import Status
 
 
 def parse_input_string(input_string):
@@ -60,9 +61,8 @@ def parse_input_string(input_string):
     return grid, ignore_transition
 
 
-def make_rle(grid, background_grid=None, rule=None, determined=None, show_background=None):
+def make_rle(grid, solution, background_grid=None, rule=None, determined=None, show_background=None):
     """Turn a search pattern into nicely formatted string form"""
-
     log('Format: RLE')
 
     grid = copy.deepcopy(grid)
@@ -73,15 +73,16 @@ def make_rle(grid, background_grid=None, rule=None, determined=None, show_backgr
     for t, generation in enumerate(grid):
         for y, row in enumerate(generation):
             for x, cell in enumerate(row):
-                assert cell in ["0", "1"], "Cell not equal to 0 or 1 in RLE format"
-                if cell == "0":
-                    grid[t][y][x] = "b"
-                elif cell == "1":
+                if cell in solution:
                     grid[t][y][x] = "o"
+                else:
+                    grid[t][y][x] = "b"
 
     rle_string = "x = " + str(width) + ", y = " + str(height)
 
     if rule is not None:
+        for transition in rule:
+            rule[transition] = 1 if rule[transition] in solution else -1
         rle_string += ", rule = " + rulestring_from_rule(rule)
 
     rle_string += "\n"
@@ -101,11 +102,10 @@ def make_rle(grid, background_grid=None, rule=None, determined=None, show_backgr
         for t, generation in enumerate(background_grid):
             for y, row in enumerate(generation):
                 for x, cell in enumerate(row):
-                    assert cell in ["0", "1"], "Cell not equal to 0 or 1 in RLE format"
-                    if cell == "0":
-                        background_grid[t][y][x] = "b"
-                    elif cell == "1":
+                    if cell in solution:
                         background_grid[t][y][x] = "o"
+                    else:
+                        background_grid[t][y][x] = "b"
 
         rle_string += "\n\n".join(
             "$\n".join("".join(line) for line in generation) for generation in background_grid) + "\n"
@@ -149,7 +149,7 @@ def make_csv(
 
 
 def space_evenly(grid, ignore_transition=None):
-    grid = copy.deepcopy(grid)
+    grid = [[[str(cell) for cell in row] for row in generation] for generation in grid]
     if ignore_transition is None:
         ignore_transition = make_grid(False, template=grid)
 
@@ -223,3 +223,28 @@ def make_blk(
         block.append('\n')
     blk_string += '\n' + "".join(block)
     return blk_string
+
+def clauses_to_dimacs(clauses, number_of_variables):
+    log('Writing clauses into DIMACS format ...', 1)
+    dimacs = f"p cnf {number_of_variables} {len(clauses)}\n" + "".join(
+        ' '.join(str(literal) for literal in clause) + ' 0\n' for clause in clauses)
+    log('Done\n', -1)
+    return dimacs
+
+
+def format_dimacs_output(dimacs_output):
+    lines = dimacs_output.strip('\n').split('\n')
+
+    statuses = [line[2:] for line in lines if line[0] == 's']
+    variable_lines = [line[2:] for line in lines if line[0] == 'v']
+
+    if len(statuses) != 1:
+        raise Exception('Wrong number of status lines')
+    if statuses[0] == 'UNSATISFIABLE':
+        return Status.UNSAT, None
+    elif statuses[0] == 'SATISFIABLE':
+        solution = set(int(literal) for line in variable_lines for literal in line.split() if literal != '0')
+        return Status.SAT, solution
+    else:
+        raise Exception('Unknown exit status for SAT solver')
+
