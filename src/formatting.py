@@ -125,7 +125,6 @@ def make_csv(
     """Turn a search pattern in list form into nicely formatted csv string"""
 
     log('Format: csv')
-
     grid = space_evenly(grid, ignore_transition)
 
     csv_string = ""
@@ -186,6 +185,7 @@ lookup_block = {
 
 def make_blk(
         grid,
+        solution,
         background_grid=None,
         rule = None,
         determined = None,
@@ -193,7 +193,7 @@ def make_blk(
 ):
     """Turn a search pattern in unicode block form"""
 
-    log('Format: csv')
+    log('Format: blk')
 
     grid = copy.deepcopy(grid)
 
@@ -205,13 +205,14 @@ def make_blk(
     for t, generation in enumerate(grid):
         for y, row in enumerate(generation):
             for x, cell in enumerate(row):
-                assert cell in ["0","1"], "Cell not equal to 0 or 1 in RLE format"
-                if cell == "1":
+                if cell in solution:
                     bitmap[t][y][x] = 1
 
     blk_string = "x = " + str(width) + ", y = " + str(height)
 
-    if rule != None:
+    if rule is not None:
+        for transition in rule:
+            rule[transition] = 1 if rule[transition] in solution else -1
         blk_string += ", rule = " + rulestring_from_rule(rule)
 
     block = []

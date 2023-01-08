@@ -459,7 +459,7 @@ while solutions_remaining > 0:
     time_taken += extra_time_taken
     if status == Status.SAT:
         solutions_remaining -= 1
-        output_string = src.formatting.make_rle(
+        output_string = src.formatting.make_blk(
             search_pattern.grid,
             solution,
             background_grid=search_pattern.background_grid,
